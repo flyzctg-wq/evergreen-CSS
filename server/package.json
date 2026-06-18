@@ -1,0 +1,17 @@
+{
+  "name": "evergreen-club-sync",
+  "version": "1.0.0",
+  "description": "Viewer-only live sync backend for Evergreen Club cricket scoring",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
