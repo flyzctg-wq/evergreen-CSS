@@ -3,11 +3,28 @@
   "functions": {
     "api/**/*.js": { "maxDuration": 10 }
   },
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/EvergreenClub.html"
+    },
+    {
+      "src": "/api/matches/([^/]+)/state",
+      "dest": "/api/matches/[matchId]/state?matchId=$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "handle": "filesystem"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
       ]
