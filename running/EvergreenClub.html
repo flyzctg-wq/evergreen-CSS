@@ -415,7 +415,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
   var SYNC_CHANNEL_NAME = "evergreen-club-live-match";
   var SYNC_STORAGE_KEY = "evergreenClubLiveSnapshot";
   function broadcastSnapshot(snapshot) {
-    const payload = { ...snapshot, __ts: Date.now() };
+    const payload = {
+      ...snapshot,
+      matchId: activeMatchSync.matchId,
+      __ts: Date.now()
+    };
     try {
       if (typeof BroadcastChannel !== "undefined") {
         const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
@@ -428,11 +432,91 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
     }
+    pushSnapshotToServer(payload);
   }
   function readLatestSnapshot() {
     try {
       const raw = localStorage.getItem(SYNC_STORAGE_KEY);
       return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  var DEFAULT_API_BASE = "http://localhost:3847";
+  var activeMatchSync = { matchId: null, writeKey: null, apiBase: null };
+  function generateMatchCode(len = 6) {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    return s;
+  }
+  function getApiBaseFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get("server");
+      if (fromUrl) return fromUrl.replace(/\/$/, "");
+      const stored = localStorage.getItem("evergreenClubApiBase");
+      return stored || DEFAULT_API_BASE;
+    } catch (e) {
+      return DEFAULT_API_BASE;
+    }
+  }
+  function getMatchIdFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const m = params.get("match");
+      return m ? m.toUpperCase() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function buildViewerUrl(matchId, apiBase) {
+    const params = `?role=viewer&match=${matchId}&server=${encodeURIComponent(apiBase)}`;
+    if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+      const path = window.location.pathname.endsWith(".html")
+        ? window.location.pathname
+        : "/EvergreenClub.html";
+      return `${window.location.origin}${path}${params}`;
+    }
+    return `${apiBase}/EvergreenClub.html${params}`;
+  }
+  function initMatchSync() {
+    if (activeMatchSync.matchId && activeMatchSync.writeKey) return activeMatchSync;
+    activeMatchSync = {
+      matchId: generateMatchCode(6),
+      writeKey: generateMatchCode(8) + generateMatchCode(8),
+      apiBase: getApiBaseFromUrl()
+    };
+    try {
+      localStorage.setItem(
+        "evergreenClubActiveMatch",
+        JSON.stringify({
+          matchId: activeMatchSync.matchId,
+          writeKey: activeMatchSync.writeKey,
+          apiBase: activeMatchSync.apiBase
+        })
+      );
+    } catch (e) {
+    }
+    return activeMatchSync;
+  }
+  async function pushSnapshotToServer(snapshot) {
+    if (!activeMatchSync.matchId || !activeMatchSync.writeKey || !activeMatchSync.apiBase) return;
+    try {
+      await fetch(`${activeMatchSync.apiBase}/api/matches/${activeMatchSync.matchId}/state`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ writeKey: activeMatchSync.writeKey, snapshot })
+      });
+    } catch (e) {
+    }
+  }
+  async function fetchSnapshotFromServer(matchId, apiBase) {
+    try {
+      const r = await fetch(`${apiBase}/api/matches/${matchId}/state`);
+      if (!r.ok) return null;
+      const data = await r.json();
+      return data.snapshot || null;
     } catch (e) {
       return null;
     }
@@ -778,8 +862,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     return /* @__PURE__ */ React.createElement("div", { id: "full-scorecard-print-area" }, /* @__PURE__ */ React.createElement("div", { className: "print-letterhead" }, /* @__PURE__ */ React.createElement("div", { className: "print-club-name" }, "EVERGREEN CLUB"), /* @__PURE__ */ React.createElement("div", { className: "print-sub" }, "Official Match Scorecard"), /* @__PURE__ */ React.createElement("div", { className: "print-meta" }, matchConfig.teamA.name, " vs ", matchConfig.teamB.name, " \xB7 ", matchConfig.totalOvers, "-over match \xB7 ", matchConfig.teamSize, " players a side"), resultText && /* @__PURE__ */ React.createElement("div", { className: "print-result" }, resultText)), firstInningsRecord && /* @__PURE__ */ React.createElement(InningsScorecard, { innings: firstInningsRecord, matchConfig, label: "1st Innings" }), /* @__PURE__ */ React.createElement(InningsScorecard, { innings, matchConfig, label: firstInningsRecord ? "2nd Innings" : "Innings" }));
   }
   function ViewerScreen({ onExit }) {
-    const [snapshot, setSnapshot] = React.useState(() => readLatestSnapshot());
+    const remoteMatchId = React.useMemo(() => getMatchIdFromUrl(), []);
+    const remoteApiBase = React.useMemo(() => getApiBaseFromUrl(), []);
+    const [snapshot, setSnapshot] = React.useState(() => (remoteMatchId ? null : readLatestSnapshot()));
     const [connected, setConnected] = React.useState(false);
+    const [syncStatus, setSyncStatus] = React.useState(remoteMatchId ? "Connecting to live server\u2026" : "Same-device sync");
     React.useEffect(() => {
       let channel = null;
       if (typeof BroadcastChannel !== "undefined") {
@@ -787,21 +874,39 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         channel.onmessage = (e) => {
           setSnapshot(e.data);
           setConnected(true);
+          setSyncStatus("Live (same device)");
         };
       }
-      const poll = setInterval(() => {
+      const poll = setInterval(async () => {
+        if (remoteMatchId) {
+          const latest = await fetchSnapshotFromServer(remoteMatchId, remoteApiBase);
+          if (latest) {
+            setSnapshot((prev) => {
+              if (!prev || latest.__ts !== prev.__ts) {
+                setConnected(true);
+                setSyncStatus(`Live \u2014 match ${remoteMatchId}`);
+                return latest;
+              }
+              return prev;
+            });
+          } else {
+            setSyncStatus(`Waiting for match ${remoteMatchId}\u2026`);
+          }
+          return;
+        }
         const latest = readLatestSnapshot();
         if (latest && (!snapshot || latest.__ts !== snapshot.__ts)) {
           setSnapshot(latest);
+          setConnected(true);
         }
       }, 1e3);
       return () => {
         if (channel) channel.close();
         clearInterval(poll);
       };
-    }, []);
+    }, [remoteMatchId, remoteApiBase]);
     if (!snapshot) {
-      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "100px auto", textAlign: "center", padding: 20 } }, /* @__PURE__ */ React.createElement(Panel, { title: "Waiting for match" }, /* @__PURE__ */ React.createElement("div", { style: { color: COLORS.creamDim, fontFamily: fontBody, fontSize: 14, marginBottom: 14 } }, "No live match found yet. Once the scorer starts a match on this device, this screen updates automatically."), /* @__PURE__ */ React.createElement(Btn, { kind: "ghost", onClick: onExit }, "\u2190 Back")));
+      return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 480, margin: "100px auto", textAlign: "center", padding: 20 } }, /* @__PURE__ */ React.createElement(Panel, { title: "Waiting for match" }, /* @__PURE__ */ React.createElement("div", { style: { color: COLORS.creamDim, fontFamily: fontBody, fontSize: 14, marginBottom: 14 } }, remoteMatchId ? `No live match found for code ${remoteMatchId} yet. Ask the scorer to start scoring \u2014 this screen refreshes automatically.` : "No live match found yet. Once the scorer starts a match on this device, this screen updates automatically.", remoteMatchId && /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontMono, fontSize: 11, color: COLORS.textMuted, marginTop: 10 } }, "Server: ", remoteApiBase)), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontBody, fontSize: 11, color: COLORS.textMuted, marginTop: 8 } }, syncStatus), /* @__PURE__ */ React.createElement(Btn, { kind: "ghost", onClick: onExit }, "\u2190 Back")));
     }
     const { matchConfig, innings, firstInningsRecord, matchOver, resultText, inningsNumber } = snapshot;
     if (matchOver) {
@@ -832,7 +937,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           textTransform: "uppercase"
         }
       },
-      /* @__PURE__ */ React.createElement("span", null, "\u25CF Live viewer \u2014 read only"),
+      /* @__PURE__ */ React.createElement("span", null, "\u25CF Live viewer \u2014 read only", remoteMatchId ? ` \u2014 ${remoteMatchId}` : ""),
+      /* @__PURE__ */ React.createElement("span", { style: { color: connected ? COLORS.green : COLORS.textMuted, fontSize: 10 } }, syncStatus),
       /* @__PURE__ */ React.createElement("button", { onClick: onExit, style: { background: "none", border: "none", color: COLORS.textMuted, cursor: "pointer", fontSize: 11 } }, "Exit viewer")
     ), /* @__PURE__ */ React.createElement(
       "div",
@@ -885,116 +991,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontMono, color: COLORS.creamDim, fontSize: 13 } }, b.data ? `${b.data.runs} (${b.data.balls})` : "\u2014", b.data && b.data.balls > 0 && /* @__PURE__ */ React.createElement("span", { style: { color: COLORS.textMuted } }, " \xB7 SR ", (100 * (b.data.runs / b.data.balls)).toFixed(1)))
     ))), /* @__PURE__ */ React.createElement(Panel, { title: "Bowling" }, bowlerStats ? /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontBody } }, /* @__PURE__ */ React.createElement("div", { style: { color: COLORS.cream, fontWeight: 700 } }, bowlerStats.name), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontMono, color: COLORS.creamDim, fontSize: 13, marginTop: 4 } }, ballsToOverString(bowlerStats.legalBalls), " ov \xB7 ", bowlerStats.runs, " runs \xB7 ", bowlerStats.wickets, " wkt", bowlerStats.maidens > 0 ? ` \xB7 ${bowlerStats.maidens} M` : "")) : /* @__PURE__ */ React.createElement("div", { style: { color: COLORS.textMuted, fontFamily: fontBody, fontSize: 13 } }, "Between overs \u2014 next bowler not set yet."))), innings.fallOfWickets.length > 0 && /* @__PURE__ */ React.createElement(Panel, { title: "Fall of wickets", style: { marginTop: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, fontFamily: fontMono, fontSize: 12, color: COLORS.creamDim } }, innings.fallOfWickets.map((fw, i) => /* @__PURE__ */ React.createElement("span", { key: i }, fw.score, "-", fw.wicketNumber, " (", fw.batter, ", ", fw.overs, " ov)")))));
   }
-  function EditScoreModal({ innings, matchConfig, onSave, onClose }) {
-    const [draft, setDraft] = React.useState(() => structuredCloneLite(innings));
-    const [confirming, setConfirming] = React.useState(false);
-    function numF(v) { const n = Number(v); return isNaN(n) ? 0 : Math.max(0, n); }
-    function setTop(field, val) {
-      setDraft(prev => { const next = structuredCloneLite(prev); next[field] = numF(val); return next; });
-    }
-    function setBat(name, field, val) {
-      setDraft(prev => {
-        const next = structuredCloneLite(prev);
-        if (field === "out") next.batsmen[name].out = Boolean(val);
-        else if (field === "howOut" || field === "outBy") next.batsmen[name][field] = val;
-        else next.batsmen[name][field] = numF(val);
-        return next;
-      });
-    }
-    function setBowl(name, field, val) {
-      setDraft(prev => { const next = structuredCloneLite(prev); next.bowlers[name][field] = numF(val); return next; });
-    }
-    const battersUsed = draft.battingOrder.filter(n => draft.batsmen[n] && (draft.batsmen[n].balls > 0 || draft.batsmen[n].out));
-    const bowlersUsed = Object.values(draft.bowlers).filter(b => b.legalBalls > 0 || b.runs > 0);
-    const fldStyle = { width: 54, background: COLORS.bg, border: `1px solid ${COLORS.line}`, borderRadius: 6, color: COLORS.cream, padding: "4px 6px", textAlign: "center", fontFamily: fontMono, fontSize: 12, boxSizing: "border-box" };
-    if (confirming) {
-      return /* @__PURE__ */ React.createElement("div", { style: { position:"fixed", inset:0, background:"rgba(0,0,0,0.87)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:95, padding:16 } },
-        /* @__PURE__ */ React.createElement("div", { style: { background:COLORS.panel, border:`2px solid ${COLORS.red}`, borderRadius:14, padding:28, width:380, textAlign:"center" } },
-          /* @__PURE__ */ React.createElement("div", { style: { fontSize:32, marginBottom:12 } }, "\u26A0\uFE0F"),
-          /* @__PURE__ */ React.createElement("div", { style: { fontFamily:fontDisplay, fontSize:20, color:COLORS.cream, marginBottom:10 } }, "Apply manual correction?"),
-          /* @__PURE__ */ React.createElement("div", { style: { fontFamily:fontBody, fontSize:13, color:COLORS.textMuted, marginBottom:22 } }, "This overwrites the current score and clears undo history. Cannot be undone."),
-          /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:10 } },
-            /* @__PURE__ */ React.createElement(Btn, { kind:"danger", style:{ flex:1, padding:12 }, onClick: () => onSave(draft) }, "Yes, apply it"),
-            /* @__PURE__ */ React.createElement(Btn, { kind:"ghost", style:{ flex:1, padding:12 }, onClick: () => setConfirming(false) }, "Go back")
-          )
-        )
-      );
-    }
-    return /* @__PURE__ */ React.createElement("div", { id:"edit-score-modal", style: { position:"fixed", inset:0, background:"rgba(0,0,0,0.87)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:85, padding:"20px 12px", overflowY:"auto" } },
-      /* @__PURE__ */ React.createElement("div", { style: { background:COLORS.panel, border:`1px solid ${COLORS.gold}`, borderRadius:16, padding:24, width:"min(96vw,700px)", marginBottom:40 } },
-        /* @__PURE__ */ React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 } },
-          /* @__PURE__ */ React.createElement("div", { style: { fontFamily:fontDisplay, fontSize:22, color:COLORS.gold } }, "\u270E Manual Score Correction"),
-          /* @__PURE__ */ React.createElement("button", { onClick:onClose, style:{ background:"none", border:"none", color:COLORS.textMuted, fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "\u00D7")
-        ),
-        /* @__PURE__ */ React.createElement("div", { style: { fontFamily:fontBody, fontSize:12, color:"#ff9d86", marginBottom:18, padding:"8px 12px", background:"rgba(193,67,42,0.12)", borderRadius:8, border:`1px solid ${COLORS.red}` } },
-          "\u26A0 Bypasses all rule validation. Use only to correct historical entry errors."
-        ),
-        /* @__PURE__ */ React.createElement(Panel, { title:"Team Totals" },
-          /* @__PURE__ */ React.createElement("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 } },
-            [["score","Total Runs"],["wickets","Wickets"],["legalBalls","Legal Balls Bowled"]].map(([field, label]) =>
-              /* @__PURE__ */ React.createElement("label", { key:field },
-                /* @__PURE__ */ React.createElement("div", { style:{ fontSize:11, color:COLORS.textMuted, fontFamily:fontBody, marginBottom:5, textTransform:"uppercase", letterSpacing:"0.06em" } }, label),
-                /* @__PURE__ */ React.createElement("input", { type:"number", min:0, value:draft[field], onChange: e => setTop(field, e.target.value), style:{ ...inputStyle, padding:"7px 10px" } })
-              )
-            )
-          )
-        ),
-        battersUsed.length > 0 && /* @__PURE__ */ React.createElement(Panel, { title:"Batsmen", style:{ marginTop:14 } },
-          /* @__PURE__ */ React.createElement("div", { style:{ overflowX:"auto" } },
-            /* @__PURE__ */ React.createElement("table", { style:{ width:"100%", borderCollapse:"collapse" } },
-              /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null,
-                ["Batter","R","B","4s","6s","Out?","How Out"].map(h =>
-                  /* @__PURE__ */ React.createElement("th", { key:h, style:{ padding:"4px 6px", color:COLORS.textMuted, fontFamily:fontBody, fontSize:10, textTransform:"uppercase", textAlign:h==="Batter"?"left":"center", borderBottom:`1px solid ${COLORS.line}` } }, h)
-                )
-              )),
-              /* @__PURE__ */ React.createElement("tbody", null, battersUsed.map(name => {
-                const b = draft.batsmen[name];
-                return /* @__PURE__ */ React.createElement("tr", { key:name },
-                  /* @__PURE__ */ React.createElement("td", { style:{ padding:"5px 6px", color:COLORS.cream, fontFamily:fontBody, fontSize:13, whiteSpace:"nowrap" } }, name),
-                  ...["runs","balls","fours","sixes"].map(f =>
-                    /* @__PURE__ */ React.createElement("td", { key:f, style:{ padding:"5px 4px", textAlign:"center" } },
-                      /* @__PURE__ */ React.createElement("input", { type:"number", min:0, value:b[f], onChange: e => setBat(name, f, e.target.value), style:fldStyle })
-                    )
-                  ),
-                  /* @__PURE__ */ React.createElement("td", { style:{ padding:"5px 8px", textAlign:"center" } },
-                    /* @__PURE__ */ React.createElement("input", { type:"checkbox", checked:!!b.out, onChange: e => setBat(name, "out", e.target.checked), style:{ accentColor:COLORS.gold, width:16, height:16, cursor:"pointer" } })
-                  ),
-                  /* @__PURE__ */ React.createElement("td", { style:{ padding:"5px 4px" } },
-                    /* @__PURE__ */ React.createElement("input", { type:"text", value:b.howOut||"", placeholder:"BOWLED", onChange: e => setBat(name, "howOut", e.target.value.toUpperCase()), style:{ width:82, background:COLORS.bg, border:`1px solid ${COLORS.line}`, borderRadius:6, color:COLORS.cream, padding:"4px 6px", fontFamily:fontBody, fontSize:11, boxSizing:"border-box" } })
-                  )
-                );
-              }))
-            )
-          )
-        ),
-        bowlersUsed.length > 0 && /* @__PURE__ */ React.createElement(Panel, { title:"Bowlers", style:{ marginTop:14 } },
-          /* @__PURE__ */ React.createElement("div", { style:{ overflowX:"auto" } },
-            /* @__PURE__ */ React.createElement("table", { style:{ width:"100%", borderCollapse:"collapse" } },
-              /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null,
-                ["Bowler","Balls","Runs","Wickets","Maidens"].map(h =>
-                  /* @__PURE__ */ React.createElement("th", { key:h, style:{ padding:"4px 6px", color:COLORS.textMuted, fontFamily:fontBody, fontSize:10, textTransform:"uppercase", textAlign:h==="Bowler"?"left":"center", borderBottom:`1px solid ${COLORS.line}` } }, h)
-                )
-              )),
-              /* @__PURE__ */ React.createElement("tbody", null, bowlersUsed.map(bw =>
-                /* @__PURE__ */ React.createElement("tr", { key:bw.name },
-                  /* @__PURE__ */ React.createElement("td", { style:{ padding:"5px 6px", color:COLORS.cream, fontFamily:fontBody, fontSize:13, whiteSpace:"nowrap" } }, bw.name),
-                  ...["legalBalls","runs","wickets","maidens"].map(f =>
-                    /* @__PURE__ */ React.createElement("td", { key:f, style:{ padding:"5px 4px", textAlign:"center" } },
-                      /* @__PURE__ */ React.createElement("input", { type:"number", min:0, value:bw[f], onChange: e => setBowl(bw.name, f, e.target.value), style:fldStyle })
-                    )
-                  )
-                )
-              ))
-            )
-          )
-        ),
-        /* @__PURE__ */ React.createElement("div", { style:{ display:"flex", gap:10, marginTop:22, flexWrap:"wrap" } },
-          /* @__PURE__ */ React.createElement(Btn, { kind:"primary", style:{ flex:1, minWidth:180, padding:13 }, onClick: () => setConfirming(true) }, "Review \u0026 Apply Changes"),
-          /* @__PURE__ */ React.createElement(Btn, { kind:"ghost", style:{ padding:13 }, onClick:onClose }, "Cancel")
-        )
-      )
-    );
-  }
   function MatchScreen({ matchConfig, initialBattingTeamName, onMatchEnd }) {
     const battingTeam = initialBattingTeamName === matchConfig.teamA.name ? matchConfig.teamA : matchConfig.teamB;
     const bowlingTeam = initialBattingTeamName === matchConfig.teamA.name ? matchConfig.teamB : matchConfig.teamA;
@@ -1007,25 +1003,86 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     const [violation, setViolation] = React.useState("");
     const [matchOver, setMatchOver] = React.useState(false);
     const [resultText, setResultText] = React.useState("");
-    const [undoStack, setUndoStack] = React.useState([]);
-    const [showEditScore, setShowEditScore] = React.useState(false);
-    const [matchCode] = React.useState(() => {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    });
-    const [writeKey] = React.useState(() => {
-      try { return crypto.randomUUID(); } catch { return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); }
-    });
-    const [serverUrl] = React.useState(() => {
-      try {
-        const p = new URLSearchParams(window.location.search);
-        const explicit = p.get("server");
-        if (explicit) return explicit;
-        if (window.location.protocol !== "file:") return window.location.origin;
-        return "";
-      } catch (e) { return ""; }
-    });
-    const [showViewerPanel, setShowViewerPanel] = React.useState(false);
+    const [historyStack, setHistoryStack] = React.useState([]);
+    const [correctionMode, setCorrectionMode] = React.useState(false);
+    const [viewerShareUrl, setViewerShareUrl] = React.useState("");
+    const [matchCode, setMatchCode] = React.useState("");
+    const [shareCopied, setShareCopied] = React.useState(false);
+    React.useEffect(() => {
+      const sync = initMatchSync();
+      setMatchCode(sync.matchId);
+      setViewerShareUrl(buildViewerUrl(sync.matchId, sync.apiBase));
+    }, []);
+    function captureMatchCheckpoint() {
+      return {
+        innings: structuredCloneLite(innings),
+        inningsNumber,
+        firstInningsRecord: firstInningsRecord ? structuredCloneLite(firstInningsRecord) : null,
+        matchOver,
+        resultText,
+        needBowler,
+        needNewBatter,
+        pendingWicketResume
+      };
+    }
+    function restoreMatchCheckpoint(cp) {
+      setInnings(cp.innings);
+      setInningsNumber(cp.inningsNumber);
+      setFirstInningsRecord(cp.firstInningsRecord);
+      setMatchOver(cp.matchOver);
+      setResultText(cp.resultText);
+      setNeedBowler(cp.needBowler);
+      setNeedNewBatter(cp.needNewBatter);
+      setPendingWicketResume(cp.pendingWicketResume);
+      setViolation("");
+      setShowWicketPicker(false);
+      setRunOutDetailStage(false);
+      setPendingRuns(0);
+      setPendingExtraType(null);
+      setCorrectionMode(false);
+    }
+    function undoLastBall() {
+      if (historyStack.length === 0 || matchOver) return;
+      const stack = [...historyStack];
+      const checkpoint = stack.pop();
+      setHistoryStack(stack);
+      restoreMatchCheckpoint(checkpoint);
+    }
+    function beginScoreCorrection() {
+      if (historyStack.length === 0 || innings.timeline.length === 0 || matchOver) return;
+      const lastEvent = innings.timeline[innings.timeline.length - 1];
+      const delivery = lastEvent.delivery;
+      const stack = [...historyStack];
+      const checkpoint = stack.pop();
+      setHistoryStack(stack);
+      restoreMatchCheckpoint(checkpoint);
+      setCorrectionMode(true);
+      if (!delivery) return;
+      setPendingExtraType(delivery.extra || null);
+      if (delivery.extra === "WIDE") {
+        setPendingRuns(delivery.extraRuns || 0);
+      } else if (delivery.extra === "BYE" || delivery.extra === "LEG_BYE") {
+        setPendingRuns(delivery.extraRuns || 0);
+      } else if (delivery.extra === "NO_BALL") {
+        setPendingRuns(delivery.runsOffBat || 0);
+      } else if (delivery.wicket) {
+        setPendingRuns(delivery.runsOffBat || 0);
+        setShowWicketPicker(true);
+      } else {
+        setPendingRuns(delivery.runsOffBat || 0);
+      }
+    }
+    function copyViewerLink() {
+      if (!viewerShareUrl) return;
+      const done = () => {
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2e3);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(viewerShareUrl).then(done).catch(() => {
+        });
+      }
+    }
     const currentBattingTeam = inningsNumber === 1 ? battingTeam : bowlingTeam;
     const currentBowlingTeam = inningsNumber === 1 ? bowlingTeam : battingTeam;
     const strikerName = innings.battingOrder[innings.strikerIdx];
@@ -1042,7 +1099,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     const oversComplete = innings.legalBalls >= matchConfig.totalOvers * 6;
     const chaseWon = innings.target !== null && innings.score >= innings.target;
     React.useEffect(() => {
-      const snap = {
+      broadcastSnapshot({
         kind: "MATCH_STATE",
         matchConfig,
         inningsNumber,
@@ -1052,17 +1109,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         resultText,
         needBowler,
         needNewBatter
-      };
-      broadcastSnapshot(snap);
-      if (serverUrl && matchCode && writeKey) {
-        try {
-          fetch(`${serverUrl}/api/matches/${matchCode}/state`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ writeKey, snapshot: snap })
-          }).catch(() => {});
-        } catch (e) {}
-      }
+      });
     }, [innings, inningsNumber, firstInningsRecord, matchOver, resultText, needBowler, needNewBatter]);
     React.useEffect(() => {
       if (matchOver) return;
@@ -1092,36 +1139,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       setInningsNumber(2);
       setNeedBowler(true);
       setNeedNewBatter(false);
-    }
-    function saveCheckpoint() {
-      const cp = {
-        innings: structuredCloneLite(innings),
-        needBowler,
-        needNewBatter,
-        pendingWicketResume,
-        inningsNumber,
-        firstInningsRecord: firstInningsRecord ? structuredCloneLite(firstInningsRecord) : null,
-        matchOver,
-        resultText
-      };
-      setUndoStack(prev => [...prev, cp]);
-    }
-    function undoBall() {
-      if (undoStack.length === 0 || matchOver) return;
-      const cp = undoStack[undoStack.length - 1];
-      setInnings(cp.innings);
-      setNeedBowler(cp.needBowler);
-      setNeedNewBatter(cp.needNewBatter);
-      setPendingWicketResume(cp.pendingWicketResume);
-      if (cp.inningsNumber !== inningsNumber) setInningsNumber(cp.inningsNumber);
-      setFirstInningsRecord(cp.firstInningsRecord);
-      setMatchOver(cp.matchOver);
-      setResultText(cp.resultText);
-      setUndoStack(prev => prev.slice(0, -1));
-      setViolation("");
-      setPendingExtraType(null);
-      setShowWicketPicker(false);
-      setRunOutDetailStage(false);
     }
     function pickBowler(name) {
       const check = checkLegality({ innings, matchConfig, proposedBowlerId: name, deliveryType: "OVER_START" });
@@ -1185,6 +1202,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           setViolation(legalityCheck.reason);
           return;
         }
+        setHistoryStack((prev) => [...prev, captureMatchCheckpoint()]);
         setInnings((prev) => {
           const next = structuredCloneLite(prev);
           const isWide = delivery.extra === "WIDE";
@@ -1268,7 +1286,13 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             extraRuns: delivery.extra ? isNoBall ? runsToTeam - 1 : runsToTeam : 0,
             wicket: !!delivery.wicket,
             freeHit: hadFreeHitThisBall,
-            note: delivery.wicket ? `${delivery.wicket.type.replace("_", " ")}` : hadFreeHitThisBall ? "Free Hit" : ""
+            note: delivery.wicket ? `${delivery.wicket.type.replace("_", " ")}` : hadFreeHitThisBall ? "Free Hit" : "",
+            delivery: {
+              runsOffBat: delivery.runsOffBat || 0,
+              extra: delivery.extra || null,
+              extraRuns: delivery.extraRuns || 0,
+              wicket: delivery.wicket ? { ...delivery.wicket } : null
+            }
           };
           next.timeline.push(ballEvent);
           next.thisOverEvents = [...next.thisOverEvents, ballEvent];
@@ -1294,8 +1318,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           return next;
         });
         setViolation("");
+        setCorrectionMode(false);
       },
-      [innings, matchConfig]
+      [innings, matchConfig, historyStack, matchOver, inningsNumber, firstInningsRecord, needBowler, needNewBatter, pendingWicketResume, resultText]
     );
     React.useEffect(() => {
       if (innings.__justTookWicket) {
@@ -1323,7 +1348,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     const [runOutDetailStage, setRunOutDetailStage] = React.useState(false);
     const [runOutRunsCompleted, setRunOutRunsCompleted] = React.useState(0);
     function submitDelivery(opts) {
-      saveCheckpoint();
       recordDelivery(opts);
       setPendingRuns(0);
       setPendingExtraType(null);
@@ -1395,67 +1419,32 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           }
         },
         "\u{1F5A8} Print"
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          id: "btn-undo-ball",
-          disabled: undoStack.length === 0 || matchOver,
-          onClick: undoBall,
-          title: `Undo last ball \u2014 ${undoStack.length} checkpoint${undoStack.length === 1 ? "" : "s"} available`,
-          style: {
-            background: undoStack.length > 0 ? "rgba(212,165,60,0.10)" : "none",
-            border: `1px solid ${undoStack.length > 0 ? COLORS.gold : COLORS.line}`,
-            borderRadius: 8,
-            color: undoStack.length > 0 ? COLORS.gold : COLORS.textMuted,
-            fontFamily: fontBody,
-            fontSize: 12,
-            padding: "8px 10px",
-            cursor: undoStack.length === 0 || matchOver ? "not-allowed" : "pointer",
-            opacity: undoStack.length === 0 || matchOver ? 0.4 : 1,
-            transition: "all 0.15s ease",
-            whiteSpace: "nowrap"
-          }
-        },
-        "\u21A9 Undo ball"
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          id: "btn-edit-score",
-          onClick: () => setShowEditScore(true),
-          title: "Manually correct score or player stats",
-          style: {
-            background: "none",
-            border: `1px solid ${COLORS.line}`,
-            borderRadius: 8,
-            color: COLORS.creamDim,
-            fontFamily: fontBody,
-            fontSize: 12,
-            padding: "8px 10px",
-            cursor: "pointer",
-            whiteSpace: "nowrap"
-          }
-        },
-        "\u270E Correct"
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          id: "btn-viewer-link",
-          onClick: () => setShowViewerPanel(v => !v),
-          title: "Show live viewer link",
-          style: {
-            background: showViewerPanel ? "rgba(92,138,90,0.15)" : "none",
-            border: `1px solid ${showViewerPanel ? COLORS.green : COLORS.line}`,
-            borderRadius: 8,
-            color: showViewerPanel ? COLORS.green : COLORS.textMuted,
-            fontFamily: fontBody,
-            fontSize: 12,
-            padding: "8px 10px",
-            cursor: "pointer",
-            whiteSpace: "nowrap"
-          }
-        },
-        "\uD83D\uDCF6 Viewers"
-      ))
+      ), historyStack.length > 0 && !matchOver && /* @__PURE__ */ React.createElement(Btn, { kind: "ghost", onClick: undoLastBall, style: { fontSize: 11, padding: "8px 10px" }, "\u21A9 Undo ball"), historyStack.length > 0 && !matchOver && /* @__PURE__ */ React.createElement(Btn, { kind: "ghost", onClick: beginScoreCorrection, style: { fontSize: 11, padding: "8px 10px" }, "\u270E Correct ball"))
+    ), viewerShareUrl && !matchOver && /* @__PURE__ */ React.createElement(Panel, { title: "Live viewer link", style: { marginTop: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontBody, fontSize: 12, color: COLORS.creamDim, marginBottom: 8 } }, "Share this link with phones, tablets, or venue screens on the same network. Match code: ", /* @__PURE__ */ React.createElement("strong", { style: { color: COLORS.gold, fontFamily: fontMono } }, matchCode)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        readOnly: true,
+        value: viewerShareUrl,
+        onFocus: (e) => e.target.select(),
+        style: { ...inputStyle, flex: "1 1 280px", fontSize: 11, fontFamily: fontMono, color: COLORS.creamDim }
+      }
+    ), /* @__PURE__ */ React.createElement(Btn, { kind: "primary", onClick: copyViewerLink, style: { fontSize: 12 } }, shareCopied ? "Copied!" : "Copy link"))), correctionMode && /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          marginTop: 12,
+          background: "rgba(92,138,90,0.14)",
+          border: `1px solid ${COLORS.green}`,
+          color: COLORS.green,
+          borderRadius: 10,
+          padding: "8px 14px",
+          fontFamily: fontBody,
+          fontSize: 13,
+          fontWeight: 600,
+          textAlign: "center"
+        }
+      },
+      "Score correction \u2014 re-enter the last ball, then tap runs or Wicket to save"
     ), /* @__PURE__ */ React.createElement("div", { className: "print-only-wrapper" }, /* @__PURE__ */ React.createElement(
       FullScorecard,
       {
@@ -1554,7 +1543,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         }
       },
       opt.label
-    ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, [0, 1, 2, 3, 4, 5, 6].map((n) => /* @__PURE__ */ React.createElement(Btn, { key: n, onClick: () => quickRun(n), style: { minWidth: 46 } }, n)), /* @__PURE__ */ React.createElement(Btn, { kind: "danger", onClick: () => setShowWicketPicker(true) }, "Wicket")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: COLORS.textMuted, marginTop: 10, fontFamily: fontBody } }, pendingExtraType === "WIDE" && "Tap the number of total wide-runs to the keeper (usually 1).", pendingExtraType === "NO_BALL" && "Tap runs the batter scored off this no-ball (0\u20136). A Free Hit will be armed for next ball.", pendingExtraType === "BYE" && "Tap total bye runs taken.", pendingExtraType === "LEG_BYE" && "Tap total leg-bye runs taken.", !pendingExtraType && "Tap runs scored off the bat, or mark a Wicket.")), needBowler && /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, [0, 1, 2, 3, 4, 5, 6].map((n) => /* @__PURE__ */ React.createElement(Btn, { key: n, onClick: () => quickRun(n), style: { minWidth: 46 } }, n)), /* @__PURE__ */ React.createElement(Btn, { kind: "danger", onClick: () => setShowWicketPicker(true) }, "Wicket")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: COLORS.textMuted, marginTop: 10, fontFamily: fontBody } }, correctionMode && "Correcting the previous delivery \u2014 choose extras and tap the corrected score.", pendingExtraType === "WIDE" && !correctionMode && "Tap the number of total wide-runs to the keeper (usually 1).", pendingExtraType === "NO_BALL" && !correctionMode && "Tap runs the batter scored off this no-ball (0\u20136). A Free Hit will be armed for next ball.", pendingExtraType === "BYE" && !correctionMode && "Tap total bye runs taken.", pendingExtraType === "LEG_BYE" && !correctionMode && "Tap total leg-bye runs taken.", !pendingExtraType && !correctionMode && "Tap runs scored off the bat, or mark a Wicket.")), needBowler && /* @__PURE__ */ React.createElement(
       PickerModal,
       {
         title: `Select bowler \u2014 ${currentBowlingTeam.name}`,
@@ -1626,36 +1615,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         setRunOutDetailStage(false);
         setShowWicketPicker(false);
       } }, "Cancel")))
-    ), showViewerPanel && /* @__PURE__ */ React.createElement(Panel, { title: "Live viewer link", style: { marginTop: 16, border: `1px solid ${COLORS.green}` } },
-      /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontBody, fontSize: 13, color: COLORS.creamDim, marginBottom: 10 } },
-        serverUrl ? "Share this URL with viewers on the same network:" : "Start the Node server to enable remote viewers."
-      ),
-      serverUrl ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
-        /* @__PURE__ */ React.createElement("code", { style: { flex: 1, background: COLORS.bg, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "8px 12px", fontFamily: fontMono, fontSize: 11, color: COLORS.gold, wordBreak: "break-all" } },
-          `${serverUrl}/Viewer.html?match=${matchCode}&server=${serverUrl}`
-        ),
-        /* @__PURE__ */ React.createElement(Btn, { kind: "ghost", style: { whiteSpace: "nowrap" }, onClick: () => {
-          try { navigator.clipboard.writeText(`${serverUrl}/Viewer.html?match=${matchCode}&server=${serverUrl}`); } catch (e) {}
-        } }, "Copy")
-      ) : /* @__PURE__ */ React.createElement("div", null,
-        /* @__PURE__ */ React.createElement("code", { style: { fontFamily: fontMono, fontSize: 12, color: COLORS.gold } }, "cd server && npm start"),
-        /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontMono, fontSize: 11, color: COLORS.textMuted, marginTop: 8 } },
-          `Then open: http://localhost:3847/Viewer.html?match=${matchCode}&server=http://localhost:3847`
-        )
-      ),
-      /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, fontFamily: fontMono, fontSize: 11, color: COLORS.textMuted } }, "Match code: ",
-        /* @__PURE__ */ React.createElement("strong", { style: { color: COLORS.cream, letterSpacing: "0.15em" } }, matchCode)
-      )
-    ), showEditScore && /* @__PURE__ */ React.createElement(EditScoreModal, {
-      innings,
-      matchConfig,
-      onClose: () => setShowEditScore(false),
-      onSave: (updated) => {
-        setInnings(updated);
-        setUndoStack([]);
-        setShowEditScore(false);
-      }
-    }), (allOut || oversComplete) && inningsNumber === 1 && !needNewBatter && /* @__PURE__ */ React.createElement(
+    ), (allOut || oversComplete) && inningsNumber === 1 && !needNewBatter && /* @__PURE__ */ React.createElement(
       "div",
       {
         style: {
@@ -1708,8 +1668,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       },
       /* @__PURE__ */ React.createElement("div", { style: { fontSize: 26, marginBottom: 8 } }, "\u{1F4FA}"),
       /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontDisplay, fontSize: 20, marginBottom: 6 } }, "Viewer"),
-      /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontBody, fontSize: 12, color: COLORS.textMuted } }, "Read-only live scoreboard \u2014 watch the score, overs, and wickets update automatically. No controls.")
-    )), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18, textAlign: "center", fontFamily: fontMono, fontSize: 11, color: COLORS.textMuted } }, "Tip: bookmark this file with ", /* @__PURE__ */ React.createElement("code", null, "?role=viewer"), " in the address bar to always open straight into Viewer mode."));
+      /* @__PURE__ */ React.createElement("div", { style: { fontFamily: fontBody, fontSize: 12, color: COLORS.textMuted } }, "Read-only live scoreboard \u2014 watch the score, overs, and wickets update automatically. Works across devices when the sync server is running.")
+    )), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 18, textAlign: "center", fontFamily: fontMono, fontSize: 11, color: COLORS.textMuted } }, "Same device: ", /* @__PURE__ */ React.createElement("code", null, "?role=viewer"), " \u2014 Remote: ", /* @__PURE__ */ React.createElement("code", null, "?role=viewer&match=CODE&server=http://HOST:3847"));
   }
   function CricketScorerApp() {
     const initialRole = (() => {
