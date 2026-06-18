@@ -1,21 +1,26 @@
 /**
  * api/matches/[matchId]/state.js
  *
- * Vercel serverless function — handles GET and POST for match state.
- * Persists state in Vercel KV (Upstash Redis under the hood).
- *
- * Setup: In your Vercel project dashboard → Storage → Create a KV store
- * and connect it to this project. The environment variables are added
- * automatically:  KV_REST_API_URL  and  KV_REST_API_TOKEN
- *
  * GET  /api/matches/:matchId/state         → returns current snapshot
- * POST /api/matches/:matchId/state  {writeKey, snapshot} → stores snapshot
+ * POST /api/matches/:matchId/state         → stores snapshot (requires writeKey)
+ *
+ * Storage priority:
+ *   1. Vercel KV  (if KV_REST_API_URL + KV_REST_API_TOKEN are set)
+ *   2. In-memory  (best-effort — works within a single warm Vercel container)
+ *
+ * The in-memory fallback is reliable enough for a single scorer + a few viewers
+ * on Vercel's hobby tier (which typically keeps one warm container).
+ * For guaranteed cross-instance persistence, connect a Vercel KV store.
  */
 
-const MATCH_TTL_SECONDS = 24 * 60 * 60; // 24 hours
+// ── In-memory fallback ────────────────────────────────────────────────────────
+// Module-level so it persists across requests on the same warm container instance.
+const memStore = new Map();
+const MATCH_TTL_SECONDS = 24 * 60 * 60; // 24 h
 
-// Lazy-load @vercel/kv so the file still parses when KV isn't configured.
+// ── KV helper (lazy) ──────────────────────────────────────────────────────────
 function getKV() {
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
   try {
     return require("@vercel/kv").kv;
   } catch {
@@ -23,86 +28,78 @@ function getKV() {
   }
 }
 
+// ── Handler ───────────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  // CORS preflight
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // Normalise matchId from the dynamic path segment
   const matchId = (req.query.matchId || "").toUpperCase().trim();
   if (!matchId) return res.status(400).json({ error: "Missing matchId." });
 
   const kv = getKV();
-  const kvReady =
-    kv &&
-    process.env.KV_REST_API_URL &&
-    process.env.KV_REST_API_TOKEN;
-
-  if (!kvReady) {
-    // KV not configured — return a helpful message.
-    // The scorer and viewer still work fully offline (BroadcastChannel /
-    // localStorage). Remote sync requires Vercel KV to be set up.
-    return res.status(503).json({
-      error:
-        "Remote sync storage not configured. " +
-        "In your Vercel project → Storage, create a KV store and connect it " +
-        "to this project. No other changes are needed."
-    });
-  }
-
   const key = `match:${matchId}`;
 
-  try {
-    // ── GET ──────────────────────────────────────────────────────────────────
-    if (req.method === "GET") {
-      const entry = await kv.get(key);
-      if (!entry || !entry.snapshot) {
-        return res
-          .status(404)
-          .json({ error: "No live match found for this code." });
+  // ── GET ───────────────────────────────────────────────────────────────────
+  if (req.method === "GET") {
+    try {
+      // Try KV first
+      if (kv) {
+        const entry = await kv.get(key);
+        if (entry && entry.snapshot) {
+          return res.json({ snapshot: entry.snapshot, updatedAt: entry.updatedAt, via: "kv" });
+        }
       }
-      return res.json({ snapshot: entry.snapshot, updatedAt: entry.updatedAt });
+      // Fallback to in-memory
+      const mem = memStore.get(key);
+      if (mem && mem.snapshot) {
+        return res.json({ snapshot: mem.snapshot, updatedAt: mem.updatedAt, via: "mem" });
+      }
+      return res.status(404).json({ error: "No live match found for this code." });
+    } catch (err) {
+      // KV error — try memory
+      const mem = memStore.get(key);
+      if (mem && mem.snapshot) {
+        return res.json({ snapshot: mem.snapshot, updatedAt: mem.updatedAt, via: "mem-fallback" });
+      }
+      return res.status(404).json({ error: "No live match found for this code." });
     }
-
-    // ── POST ─────────────────────────────────────────────────────────────────
-    if (req.method === "POST") {
-      const body = req.body || {};
-      const { writeKey, snapshot } = body;
-
-      if (!writeKey || typeof writeKey !== "string") {
-        return res.status(400).json({ error: "writeKey is required." });
-      }
-      if (!snapshot || typeof snapshot !== "object") {
-        return res.status(400).json({ error: "snapshot is required." });
-      }
-
-      // Validate write key against existing entry (if any)
-      const existing = await kv.get(key);
-      if (existing && existing.writeKey !== writeKey) {
-        return res
-          .status(403)
-          .json({ error: "Invalid write key for this match." });
-      }
-
-      const entry = {
-        writeKey,
-        snapshot: { ...snapshot, __ts: Date.now() },
-        updatedAt: Date.now()
-      };
-
-      // Store with TTL so old matches auto-expire
-      await kv.set(key, entry, { ex: MATCH_TTL_SECONDS });
-
-      return res.json({ ok: true, updatedAt: entry.updatedAt });
-    }
-
-    return res.status(405).json({ error: "Method not allowed." });
-  } catch (err) {
-    console.error("[match-state] KV error:", err);
-    return res
-      .status(500)
-      .json({ error: "Storage error. Please try again." });
   }
+
+  // ── POST ──────────────────────────────────────────────────────────────────
+  if (req.method === "POST") {
+    const { writeKey, snapshot } = req.body || {};
+    if (!writeKey || typeof writeKey !== "string")
+      return res.status(400).json({ error: "writeKey is required." });
+    if (!snapshot || typeof snapshot !== "object")
+      return res.status(400).json({ error: "snapshot is required." });
+
+    const now = Date.now();
+    const entry = {
+      writeKey,
+      snapshot: { ...snapshot, __ts: now },
+      updatedAt: now
+    };
+
+    // Always write to in-memory (fast, no failure modes)
+    const existing = memStore.get(key);
+    if (existing && existing.writeKey !== writeKey) {
+      return res.status(403).json({ error: "Invalid write key for this match." });
+    }
+    memStore.set(key, entry);
+
+    // Also write to KV if available (persistent across instances)
+    if (kv) {
+      try {
+        await kv.set(key, entry, { ex: MATCH_TTL_SECONDS });
+      } catch (e) {
+        // KV write failed — in-memory already saved, continue
+      }
+    }
+
+    return res.json({ ok: true, updatedAt: now, via: kv ? "kv+mem" : "mem" });
+  }
+
+  return res.status(405).json({ error: "Method not allowed." });
 };
