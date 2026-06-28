@@ -720,14 +720,24 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         kind: "primary",
         disabled: !canStart,
         style: { padding: "14px 28px", fontSize: 15 },
-        onClick: () => onStart({
-          totalOvers: Number(totalOvers),
-          teamSize: Number(teamSize),
-          maxOversPerBowler,
-          replacementRuleType,
-          teamA: { name: teamAName.trim(), players: teamAPlayers, substitutes: teamASubstitutes.map(s => s.trim()).filter(Boolean) },
-          teamB: { name: teamBName.trim(), players: teamBPlayers, substitutes: teamBSubstitutes.map(s => s.trim()).filter(Boolean) }
-        })
+        onClick: () => {
+          const dupes = teamAPlayers.filter(p => {
+            if (p.startsWith("A-Player ") || !p.trim()) return false;
+            return teamBPlayers.includes(p);
+          });
+          if (dupes.length > 0) {
+            alert(`Error: The following player(s) are selected in both teams: ${dupes.join(", ")}. Each player must only be assigned to one team.`);
+            return;
+          }
+          onStart({
+            totalOvers: Number(totalOvers),
+            teamSize: Number(teamSize),
+            maxOversPerBowler,
+            replacementRuleType,
+            teamA: { name: teamAName.trim(), players: teamAPlayers, substitutes: teamASubstitutes.map(s => s.trim()).filter(Boolean) },
+            teamB: { name: teamBName.trim(), players: teamBPlayers, substitutes: teamBSubstitutes.map(s => s.trim()).filter(Boolean) }
+          });
+        }
       },
       "Start Match \u2014 Choose Toss \u2192"
     )), 
@@ -775,12 +785,16 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
               { id: 25, name: "Shezan" }, { id: 26, name: "Ariful Islam" }, { id: 27, name: "Jawad" }
             ];
             const currentTeamPlayers = importTargetTeam === "A" ? teamAPlayers : teamBPlayers;
+            const otherTeamPlayers = importTargetTeam === "A" ? teamBPlayers : teamAPlayers;
             
             return pool.map(p => {
               const isAssigned = currentTeamPlayers.includes(p.name);
+              const isOccupiedByOther = otherTeamPlayers.includes(p.name);
               return /* @__PURE__ */ React.createElement("button", {
                 key: p.id,
+                disabled: isOccupiedByOther,
                 onClick: () => {
+                  if (isOccupiedByOther) return;
                   const next = [...currentTeamPlayers];
                   if (isAssigned) {
                     const idx = next.indexOf(p.name);
@@ -799,17 +813,18 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
                   else setTeamBPlayers(next);
                 },
                 style: {
-                  background: isAssigned ? COLORS.gold : COLORS.panelAlt,
-                  border: `1px solid ${COLORS.line}`,
-                  color: isAssigned ? "#0B1410" : COLORS.cream,
+                  background: isAssigned ? COLORS.gold : isOccupiedByOther ? "rgba(255,255,255,0.02)" : COLORS.panelAlt,
+                  border: `1px solid ${isOccupiedByOther ? "transparent" : COLORS.line}`,
+                  color: isAssigned ? "#0B1410" : isOccupiedByOther ? COLORS.textMuted : COLORS.cream,
                   borderRadius: 8,
                   padding: "8px 12px",
                   fontSize: 12,
-                  cursor: "pointer",
+                  cursor: isOccupiedByOther ? "not-allowed" : "pointer",
                   textAlign: "left",
-                  fontWeight: isAssigned ? "bold" : "normal"
+                  fontWeight: isAssigned ? "bold" : "normal",
+                  opacity: isOccupiedByOther ? 0.4 : 1
                 }
-              }, (isAssigned ? "✓ " : "") + p.name);
+              }, isAssigned ? "✓ " + p.name : isOccupiedByOther ? p.name + " (Occupied)" : p.name);
             });
           })()
         ),
