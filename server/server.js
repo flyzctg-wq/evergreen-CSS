@@ -95,7 +95,7 @@ app.use(express.static(path.join(__dirname, "..")));
 
 httpServer.listen(PORT, HOST, () => {
   const host = HOST === "0.0.0.0" ? "localhost" : HOST;
-  console.log(`\n🏏  Evergreen Club sync server  →  http://${host}:${PORT}`);
+  console.log(`\n🏏  Evergreen Team sync server  →  http://${host}:${PORT}`);
   console.log(`   Scorer:   http://${host}:${PORT}/EvergreenClub.html`);
   console.log(`   Viewer:   http://${host}:${PORT}/Viewer.html?match=CODE&server=http://${host}:${PORT}`);
   console.log(`   Health:   http://${host}:${PORT}/api/health`);

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Evergreen Club — Live Score</title>
-<meta name="description" content="Real-time read-only live scoreboard for Evergreen Club cricket matches." />
+<title>Evergreen Team — Live Score</title>
+<meta name="description" content="Real-time read-only live scoreboard for Evergreen Team cricket matches." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -275,6 +275,15 @@ html, body {
 <body>
 <div id="app">
 
+  <!-- Brand Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--line)">
+    <img src="resorce/WhatsApp%20Image%202026-06-28%20at%201.40.53%20PM.jpeg" style="width:36px;height:36px;border-radius:6px;object-fit:cover;" alt="Evergreen Team Logo" />
+    <div>
+      <div style="font-family:'Oswald',sans-serif;font-size:18px;color:var(--cream);letter-spacing:0.04em;line-height:1">Evergreen Team</div>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Live Scoring Dashboard</div>
+    </div>
+  </div>
+
   <!-- Status bar -->
   <div id="status-bar">
     <span><span id="status-dot"></span><span id="status-text">Connecting…</span></span>
@@ -435,6 +444,16 @@ html, body {
   function inningsScorecardHTML(inn, label) {
     const battedOrder = inn.battingOrder.filter(n => inn.batsmen[n] && (inn.batsmen[n].balls > 0 || inn.batsmen[n].out));
     const bowlersUsed = Object.values(inn.bowlers).filter(b => b.legalBalls > 0);
+    const getSubSuffix = (pName) => {
+      if (!inn.substitutedPlayers) return "";
+      if (inn.substitutedPlayers[pName]) return " (subbed)";
+      const isSub = Object.values(inn.substitutedPlayers).some((details) => details.replacedBy === pName);
+      if (isSub) {
+        const details = Object.values(inn.substitutedPlayers).find((d) => d.replacedBy === pName);
+        return details.type === "serious_injury" ? " (sub-inj)" : " (sub)";
+      }
+      return "";
+    };
     let h = `<div class="sc-innings-label">${esc(label)} — ${esc(inn.battingTeamName)}</div>`;
     h += `<div class="sc-innings-sub">${inn.score}/${inn.wickets} (${ballsToOv(inn.legalBalls)} ov)</div>`;
     h += `<table class="sc-table"><thead><tr>`;
@@ -445,8 +464,11 @@ html, body {
     battedOrder.forEach(name => {
       const b = inn.batsmen[name];
       const sr = b.balls > 0 ? (100 * b.runs / b.balls).toFixed(1) : "0.0";
-      const dis = b.out ? `${(b.howOut||"").replace("_"," ").toLowerCase()}${b.outBy?" b. "+b.outBy:""}` : "not out";
-      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(name)}</td>`;
+      const isRet = b.howOut === "RETIRED_HURT" || b.howOut === "RETIRED_OUT";
+      const dis = b.out ? `${(b.howOut||"").replace("_"," ").toLowerCase()}${b.outBy && !isRet ? " b. " + b.outBy : ""}` : "not out";
+      const suffix = getSubSuffix(name);
+      const suffixSpan = suffix ? `<span style="color:var(--muted);font-size:10px;font-weight:400;margin-left:4px">${esc(suffix)}</span>` : "";
+      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(name)}${suffixSpan}</td>`;
       h += `<td class="sc-td" style="text-align:center">${b.runs}</td>`;
       h += `<td class="sc-td" style="text-align:center">${b.balls}</td>`;
       h += `<td class="sc-td" style="text-align:center">${b.fours}</td>`;
@@ -462,7 +484,9 @@ html, body {
     h += `</tr></thead><tbody>`;
     bowlersUsed.forEach(bw => {
       const econ = bw.legalBalls > 0 ? (bw.runs / bw.legalBalls * 6).toFixed(2) : "0.00";
-      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(bw.name)}</td>`;
+      const suffix = getSubSuffix(bw.name);
+      const suffixSpan = suffix ? `<span style="color:var(--muted);font-size:10px;font-weight:400;margin-left:4px">${esc(suffix)}</span>` : "";
+      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(bw.name)}${suffixSpan}</td>`;
       h += `<td class="sc-td" style="text-align:center">${ballsToOv(bw.legalBalls)}</td>`;
       h += `<td class="sc-td" style="text-align:center">${bw.maidens}</td>`;
       h += `<td class="sc-td" style="text-align:center">${bw.runs}</td>`;
@@ -679,7 +703,7 @@ html, body {
   initSocketIO();
 
   // Update page title with match code
-  document.title = `Live Score · ${MATCH_ID} · Evergreen Club`;
+  document.title = `Live Score · ${MATCH_ID} · Evergreen Team`;
 
 })();
 </script>
