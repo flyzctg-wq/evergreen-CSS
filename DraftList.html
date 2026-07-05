@@ -500,9 +500,108 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       textMuted: "#8FA396"
     };
 
-    const fontDisplay = `"Oswald", "Arial Narrow", sans-serif`;
-    const fontBody = `"Inter", "Helvetica Neue", sans-serif`;
+    const fontDisplay = `"Oswald", "Hind Siliguri", "Noto Sans Bengali", "Arial Narrow", sans-serif`;
+    const fontBody = `"Inter", "Hind Siliguri", "Noto Sans Bengali", "Helvetica Neue", sans-serif`;
     const fontMono = `"JetBrains Mono", "Courier New", monospace`;
+
+    const TRANSLATIONS = {
+      en: {
+        appTitle: "Evergreen Team",
+        draftBoardTitle: "Player Selection & Draft Board",
+        backToScorer: "← Back to Scorer",
+        printPdf: "🖨️ Print / PDF",
+        draftStats: "Draft Statistics",
+        selectedPlayers: "Selected Players",
+        remainingPool: "Remaining Pool",
+        pctSelected: "% Selected",
+        quickSquad: "Quick Squad Assignment (localStorage)",
+        quickSquadDesc: "Select players below, then assign them. The Scorer Setup can load them directly.",
+        assignTeam: "Assign ({count}) to Team {team}",
+        searchPlaceholder: "🔍 Search players or notes...",
+        addPlayerPlaceholder: "Add new player...",
+        sortLabel: "Sort:",
+        sortOriginal: "Original List Order",
+        sortNameAsc: "Player Name (A-Z)",
+        sortNameDesc: "Player Name (Z-A)",
+        sortStatusSelected: "Selected First",
+        sortStatusUnselected: "Unselected First",
+        csvExport: "📥 CSV",
+        copySheets: "📋 Copy for Sheets",
+        rosterPool: "Roster Pool ({count} players)",
+        noPlayersFound: "No players found matching your search query.",
+        indexCol: "#",
+        statusCol: "Status",
+        nameCol: "Player Name",
+        notesCol: "Notes & Remarks (Position / Ranking / Availability)",
+        actionCol: "Action",
+        deleteBtn: "Delete",
+        resetPoolBtn: "⚠️ Reset to Default 27 Players",
+        clearPoolBtn: "🧹 Clear Selections & Remarks",
+        confirmDelete: "Remove {name} from the draft pool?",
+        confirmReset: "Reset the draft pool back to the original 27 players? This will clear all custom notes and modifications.",
+        confirmClear: "Clear all selections and remarks?",
+        addedPlayerMsg: "Added {name} to the draft pool.",
+        removedPlayerMsg: "Removed {name} from the pool.",
+        resetPoolMsg: "Draft pool reset to defaults.",
+        clearPoolMsg: "All selections and remarks cleared.",
+        assignedPlayersMsg: "Assigned {count} players to Team {team} draft slots.",
+        csvDownloadMsg: "CSV downloaded. Open in Excel or import to Google Sheets.",
+        copySheetsMsg: "Table copied to clipboard! Paste directly (Ctrl+V) in Excel or Sheets.",
+        enterPlayerName: "Enter player name",
+        notesPlaceholder: "Add remarks, position, availability...",
+        selectPlayerAlert: "Please select at least one player to assign.",
+        failedWriteStorage: "Failed to write to storage.",
+        failedCopy: "Could not copy automatically. Please try again."
+      },
+      bn: {
+        appTitle: "এভারগ্রিন টিম",
+        draftBoardTitle: "খেলোয়াড় নির্বাচন ও ড্রাফট বোর্ড",
+        backToScorer: "← স্কোরারে ফিরুন",
+        printPdf: "🖨️ প্রিন্ট / পিডিএফ",
+        draftStats: "ড্রাফট পরিসংখ্যান",
+        selectedPlayers: "নির্বাচিত খেলোয়াড়",
+        remainingPool: "বাকি খেলোয়াড়",
+        pctSelected: "% নির্বাচিত",
+        quickSquad: "কুইক স্কোয়াড অ্যাসাইনমেন্ট (লোকাল স্টোরেজ)",
+        quickSquadDesc: "নিচে খেলোয়াড় সিলেক্ট করে অ্যাসাইন করুন। স্কোরার সেটআপে সরাসরি এগুলো লোড করা যাবে।",
+        assignTeam: "টিম {team}-এ অ্যাসাইন করুন ({count})",
+        searchPlaceholder: "🔍 খেলোয়াড় বা নোট খুঁজুন...",
+        addPlayerPlaceholder: "নতুন খেলোয়াড় যোগ করুন...",
+        sortLabel: "বাছাই করুন:",
+        sortOriginal: "মূল তালিকা ক্রমানুসারে",
+        sortNameAsc: "খেলোয়াড়ের নাম (অ-ঔ / A-Z)",
+        sortNameDesc: "খেলোয়াড়ের নাম (Z-A)",
+        sortStatusSelected: "নির্বাচিত খেলোয়াড় আগে",
+        sortStatusUnselected: "অনির্বাচিত খেলোয়াড় আগে",
+        csvExport: "📥 সিএসভি (CSV)",
+        copySheets: "📋 শিটের জন্য কপি করুন",
+        rosterPool: "রোস্টার পুল ({count} জন খেলোয়াড়)",
+        noPlayersFound: "আপনার অনুসন্ধানের সাথে মেলে এমন কোনো খেলোয়াড় পাওয়া যায়নি।",
+        indexCol: "ক্রমিক",
+        statusCol: "অবস্থা",
+        nameCol: "খেলোয়াড়ের নাম",
+        notesCol: "নোট ও মন্তব্য (পজিশন / র‍্যাংকিং / প্রাপ্যতা)",
+        actionCol: "অ্যাকশন",
+        deleteBtn: "মুছুন",
+        resetPoolBtn: "⚠️ মূল ২৭ জনের তালিকায় ফিরুন",
+        clearPoolBtn: "🧹 সিলেকশন ও নোটস পরিষ্কার করুন",
+        confirmDelete: "ড্রাফট পুল থেকে {name}-কে বাদ দিতে চান?",
+        confirmReset: "ড্রাফট পুলটি মূল ২৭ জনের তালিকায় রিসেট করতে চান? এর ফলে আপনার যুক্ত করা কাস্টম নোট ও খেলোয়াড় মুছে যাবে।",
+        confirmClear: "সব সিলেকশন ও মন্তব্য পরিষ্কার করতে চান?",
+        addedPlayerMsg: "ড্রাফট পুলে {name}-কে যোগ করা হয়েছে।",
+        removedPlayerMsg: "পুল থেকে {name}-কে বাদ দেওয়া হয়েছে।",
+        resetPoolMsg: "ড্রাফট পুল ডিফল্ট তালিকায় রিসেট করা হয়েছে।",
+        clearPoolMsg: "সব সিলেকশন ও মন্তব্য পরিষ্কার করা হয়েছে।",
+        assignedPlayersMsg: "টিম {team}-এর স্লটে {count} জন খেলোয়াড় অ্যাসাইন করা হয়েছে।",
+        csvDownloadMsg: "সিএসভি ফাইল ডাউনলোড হয়েছে। এক্সেল বা গুগল শিটে ইম্পোর্ট করতে পারেন।",
+        copySheetsMsg: "টেবিলটি ক্লিপবোর্ডে কপি করা হয়েছে! এক্সেল বা শিটে সরাসরি পেস্ট (Ctrl+V) করুন।",
+        enterPlayerName: "খেলোয়াড়ের নাম লিখুন",
+        notesPlaceholder: "মন্তব্য, পজিশন বা প্রাপ্যতা যোগ করুন...",
+        selectPlayerAlert: "অনুগ্রহ করে অ্যাসাইন করার জন্য অন্তত একজন খেলোয়াড় সিলেক্ট করুন।",
+        failedWriteStorage: "স্টোরেজে লিখতে ব্যর্থ হয়েছে।",
+        failedCopy: "স্বয়ংক্রিয়ভাবে কপি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+      }
+    };
 
     const DEFAULT_PLAYERS = [
       { id: 1, name: "Reaz", selected: false, notes: "" },
@@ -518,32 +617,33 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       { id: 11, name: "Chinmoy", selected: false, notes: "" },
       { id: 12, name: "Iqbal", selected: false, notes: "" },
       { id: 13, name: "Avijit", selected: false, notes: "" },
-      { id: 14, name: "Anis", selected: false, notes: "" },
-      { id: 15, name: "Shakil", selected: false, notes: "" },
-      { id: 16, name: "Tonmoy", selected: false, notes: "" },
-      { id: 17, name: "Noor-e-Alam (Babu)", selected: false, notes: "" },
-      { id: 18, name: "Mehdi Hasan", selected: false, notes: "" },
-      { id: 19, name: "Bablu", selected: false, notes: "" },
-      { id: 20, name: "Ashraful", selected: false, notes: "" },
-      { id: 21, name: "Fahad", selected: false, notes: "" },
-      { id: 22, name: "Sadi", selected: false, notes: "" },
-      { id: 23, name: "Miraz", selected: false, notes: "" },
-      { id: 24, name: "Himel", selected: false, notes: "" },
-      { id: 25, name: "Shezan", selected: false, notes: "" },
-      { id: 26, name: "Ariful Islam", selected: false, notes: "" },
-      { id: 27, name: "Jawad", selected: false, notes: "" }
+      { id: 14, name: "Sujon", selected: false, notes: "" },
+      { id: 15, name: "Ripon", selected: false, notes: "" },
+      { id: 16, name: "Rony", selected: false, notes: "" },
+      { id: 17, name: "Bappi", selected: false, notes: "" },
+      { id: 18, name: "Aminul", selected: false, notes: "" },
+      { id: 19, name: "Rubel", selected: false, notes: "" },
+      { id: 20, name: "Milon", selected: false, notes: "" },
+      { id: 21, name: "Nantu", selected: false, notes: "" },
+      { id: 22, name: "Liton", selected: false, notes: "" },
+      { id: 23, name: "Sumit", selected: false, notes: "" },
+      { id: 24, name: "Pankaj", selected: false, notes: "" },
+      { id: 25, name: "Zia", selected: false, notes: "" },
+      { id: 26, name: "Zahid", selected: false, notes: "" },
+      { id: 27, name: "Sohel", selected: false, notes: "" }
     ];
 
     function Panel({ title, children, style, className }) {
       return React.createElement(
         "div",
         {
-          className,
+          className: `panel ${className || ""}`,
           style: {
             background: COLORS.panel,
             border: `1px solid ${COLORS.line}`,
             borderRadius: 12,
-            padding: 16,
+            padding: 20,
+            marginTop: 20,
             ...style
           }
         },
@@ -551,15 +651,14 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           "div",
           {
             style: {
-              fontFamily: fontBody,
-              fontSize: 11,
-              letterSpacing: "0.12em",
+              fontFamily: fontDisplay,
+              fontSize: 14,
+              letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: COLORS.textMuted,
-              marginBottom: 12,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
+              color: COLORS.gold,
+              marginBottom: 16,
+              borderBottom: `1px solid ${COLORS.line}`,
+              paddingBottom: 8
             }
           },
           title
@@ -568,42 +667,40 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       );
     }
 
-    function Btn({ onClick, children, disabled, kind, style, title, className }) {
+    function Btn({ onClick, kind, children, style, className, disabled, type }) {
+      const [hovered, setHovered] = useState(false);
       let bg = COLORS.panelAlt;
-      let border = COLORS.line;
+      let hoverBg = COLORS.line;
       let text = COLORS.cream;
-      let hoverBg = "#223b2d";
+      let border = COLORS.line;
 
       if (kind === "primary") {
         bg = COLORS.gold;
-        border = COLORS.gold;
+        hoverBg = "#eec25d";
         text = "#0B1410";
-        hoverBg = "#e3b54d";
+        border = COLORS.gold;
       } else if (kind === "danger") {
-        bg = "rgba(193, 67, 42, 0.15)";
-        border = "rgba(193, 67, 42, 0.3)";
-        text = "#ff8c75";
-        hoverBg = "rgba(193, 67, 42, 0.3)";
-      } else if (kind === "success") {
-        bg = COLORS.green;
-        border = COLORS.green;
-        text = "#fff";
-        hoverBg = "#6ea36c";
+        bg = "rgba(193, 67, 42, 0.1)";
+        hoverBg = COLORS.red;
+        text = COLORS.red;
+        border = COLORS.red;
       } else if (kind === "ghost") {
         bg = "transparent";
-        border = "transparent";
-        text = COLORS.textMuted;
-        hoverBg = "rgba(255,255,255,0.05)";
+        hoverBg = "rgba(255,255,255,0.03)";
+        text = COLORS.creamDim;
+        border = COLORS.line;
       }
 
-      const [hovered, setHovered] = useState(false);
+      if (hovered && kind === "danger") {
+        text = "#fff";
+      }
 
       return React.createElement(
         "button",
         {
-          onClick,
-          disabled,
-          title,
+          type: type || "button",
+          disabled: disabled,
+          onClick: onClick,
           className: `btn-base ${className || ""}`,
           style: {
             background: disabled ? "rgba(255,255,255,0.03)" : hovered ? hoverBg : bg,
@@ -620,30 +717,28 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     }
 
     function App() {
+      const [lang, setLang] = useState(() => localStorage.getItem("evergreenLang") || "en");
+      const t = (key, replacements = {}) => {
+        let text = (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || (TRANSLATIONS["en"] && TRANSLATIONS["en"][key]) || key;
+        Object.keys(replacements).forEach(k => { text = text.replace(`{${k}}`, replacements[k]); });
+        return text;
+      };
+
       const [players, setPlayers] = useState(() => {
         try {
           const stored = localStorage.getItem("evergreenTeamDraftPlayers");
-          if (stored) {
-            return JSON.parse(stored);
-          }
-        } catch (e) {
-          console.error("Failed to load players from storage", e);
-        }
+          if (stored) return JSON.parse(stored);
+        } catch (e) { console.error(e); }
         return DEFAULT_PLAYERS.map(p => ({ ...p }));
       });
 
       const [searchQuery, setSearchQuery] = useState("");
-      const [sortBy, setSortBy] = useState("original"); // 'original' | 'name-asc' | 'name-desc' | 'status-selected' | 'status-unselected'
+      const [sortBy, setSortBy] = useState("original");
       const [newPlayerName, setNewPlayerName] = useState("");
       const [showToast, setShowToast] = useState(null);
 
-      // Save to localStorage whenever players change
       useEffect(() => {
-        try {
-          localStorage.setItem("evergreenTeamDraftPlayers", JSON.stringify(players));
-        } catch (e) {
-          console.error("Failed to save players to storage", e);
-        }
+        localStorage.setItem("evergreenTeamDraftPlayers", JSON.stringify(players));
       }, [players]);
 
       const triggerToast = (msg) => {
@@ -651,7 +746,6 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         setTimeout(() => setShowToast(null), 3000);
       };
 
-      // Statistics
       const stats = useMemo(() => {
         const total = players.length;
         const selected = players.filter(p => p.selected).length;
@@ -660,599 +754,144 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         return { total, selected, remaining, pct };
       }, [players]);
 
-      // Handle checkbox toggle
       const handleToggleSelect = (id) => {
         setPlayers(prev => prev.map(p => p.id === id ? { ...p, selected: !p.selected } : p));
       };
 
-      // Handle name edit
       const handleEditName = (id, newName) => {
         setPlayers(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
       };
 
-      // Handle notes edit
       const handleEditNotes = (id, newNotes) => {
         setPlayers(prev => prev.map(p => p.id === id ? { ...p, notes: newNotes } : p));
       };
 
-      // Add new player
       const handleAddPlayer = (e) => {
         e.preventDefault();
         const trimmed = newPlayerName.trim();
         if (!trimmed) return;
-        
-        // Find highest ID
         const nextId = players.reduce((max, p) => p.id > max ? p.id : max, 0) + 1;
-        const newPlayer = {
-          id: nextId,
-          name: trimmed,
-          selected: false,
-          notes: ""
-        };
-        
-        setPlayers(prev => [...prev, newPlayer]);
+        setPlayers(prev => [...prev, { id: nextId, name: trimmed, selected: false, notes: "" }]);
         setNewPlayerName("");
-        triggerToast(`Added ${trimmed} to the draft pool.`);
+        triggerToast(t("addedPlayerMsg", { name: trimmed }));
       };
 
-      // Delete player
       const handleDeletePlayer = (id, name) => {
-        if (confirm(`Remove ${name} from the draft pool?`)) {
+        if (confirm(t("confirmDelete", { name }))) {
           setPlayers(prev => prev.filter(p => p.id !== id));
-          triggerToast(`Removed ${name} from the pool.`);
+          triggerToast(t("removedPlayerMsg", { name }));
         }
       };
 
-      // Reset pool
       const handleResetPool = () => {
-        if (confirm("Reset the draft pool back to the original 27 players? This will clear all custom notes and modifications.")) {
+        if (confirm(t("confirmReset"))) {
           setPlayers(DEFAULT_PLAYERS.map(p => ({ ...p })));
-          localStorage.removeItem("draftSelectedTeamA");
-          localStorage.removeItem("draftSelectedTeamB");
-          triggerToast("Draft pool reset to defaults.");
+          triggerToast(t("resetPoolMsg"));
         }
       };
 
-      // Clear selections & notes
       const handleClearSelections = () => {
-        if (confirm("Clear all selections and remarks?")) {
+        if (confirm(t("confirmClear"))) {
           setPlayers(prev => prev.map(p => ({ ...p, selected: false, notes: "" })));
-          localStorage.removeItem("draftSelectedTeamA");
-          localStorage.removeItem("draftSelectedTeamB");
-          triggerToast("All selections and remarks cleared.");
+          triggerToast(t("clearPoolMsg"));
         }
       };
 
-      // Send to Team A / B rosters
       const handleAssignToTeam = (teamLabel) => {
         const selectedNames = players.filter(p => p.selected).map(p => p.name);
         if (selectedNames.length === 0) {
-          alert("Please select at least one player to assign.");
+          alert(t("selectPlayerAlert"));
           return;
         }
-        
-        const storageKey = teamLabel === "A" ? "draftSelectedTeamA" : "draftSelectedTeamB";
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(selectedNames));
-          triggerToast(`Assigned ${selectedNames.length} players to Team ${teamLabel} draft draft slots.`);
-        } catch (e) {
-          console.error(e);
-          alert("Failed to write to storage.");
-        }
+        localStorage.setItem(teamLabel === "A" ? "draftSelectedTeamA" : "draftSelectedTeamB", JSON.stringify(selectedNames));
+        triggerToast(t("assignedPlayersMsg", { count: selectedNames.length, team: teamLabel }));
       };
 
-      // Export CSV
       const handleExportCSV = () => {
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Index,Name,Selected,Notes/Remarks\n";
+        let csvContent = "data:text/csv;charset=utf-8,Index,Name,Selected,Notes/Remarks\n";
         players.forEach((p, idx) => {
-          const escapedName = `"${p.name.replace(/"/g, '""')}"`;
-          const escapedNotes = `"${(p.notes || "").replace(/"/g, '""')}"`;
-          csvContent += `${idx + 1},${escapedName},${p.selected ? "TRUE" : "FALSE"},${escapedNotes}\n`;
+          csvContent += `${idx + 1},"${p.name.replace(/"/g, '""')}","${p.selected ? "TRUE" : "FALSE"}","${(p.notes || "").replace(/"/g, '""')}"\n`;
         });
-        
-        const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", encodeURI(csvContent));
         link.setAttribute("download", "evergreen_team_player_draft.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        triggerToast("CSV downloaded. Open in Excel or import to Google Sheets.");
+        triggerToast(t("csvDownloadMsg"));
       };
 
-      // Copy for Sheets/Excel (TSV)
       const handleCopyForSheets = () => {
         let tsv = "Index\tName\tSelected\tNotes/Remarks\n";
-        players.forEach((p, idx) => {
-          tsv += `${idx + 1}\t${p.name}\t${p.selected ? "TRUE" : "FALSE"}\t${p.notes || ""}\n`;
-        });
-        
+        players.forEach((p, idx) => { tsv += `${idx + 1}\t${p.name}\t${p.selected ? "TRUE" : "FALSE"}\t${p.notes || ""}\n`; });
         navigator.clipboard.writeText(tsv).then(() => {
-          triggerToast("Table copied to clipboard! Paste directly (Ctrl+V) in Excel or Sheets.");
-        }).catch(err => {
-          console.error("Clipboard copy failed", err);
-          alert("Could not copy automatically. Please try again.");
-        });
+          triggerToast(t("copySheetsMsg"));
+        }).catch(() => alert(t("failedCopy")));
       };
 
-      // Filter and Sort players
       const processedPlayers = useMemo(() => {
-        // First filter by search query
-        let result = players.filter(p => {
-          const nameMatch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-          const notesMatch = (p.notes || "").toLowerCase().includes(searchQuery.toLowerCase());
-          return nameMatch || notesMatch;
-        });
-
-        // Then sort
-        if (sortBy === "name-asc") {
-          result.sort((a, b) => a.name.localeCompare(b.name));
-        } else if (sortBy === "name-desc") {
-          result.sort((a, b) => b.name.localeCompare(a.name));
-        } else if (sortBy === "status-selected") {
-          result.sort((a, b) => (b.selected ? 1 : 0) - (a.selected ? 1 : 0) || a.name.localeCompare(b.name));
-        } else if (sortBy === "status-unselected") {
-          result.sort((a, b) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0) || a.name.localeCompare(b.name));
-        } else {
-          // original order (by ID or default array order)
-          result.sort((a, b) => a.id - b.id);
-        }
-
+        let result = players.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.notes || "").toLowerCase().includes(searchQuery.toLowerCase()));
+        if (sortBy === "name-asc") result.sort((a, b) => a.name.localeCompare(b.name));
+        else if (sortBy === "name-desc") result.sort((a, b) => b.name.localeCompare(a.name));
+        else if (sortBy === "status-selected") result.sort((a, b) => (b.selected ? 1 : 0) - (a.selected ? 1 : 0));
+        else if (sortBy === "status-unselected") result.sort((a, b) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0));
         return result;
       }, [players, searchQuery, sortBy]);
 
-      return React.createElement(
-        "div",
-        {
-          style: {
-            maxWidth: 1024,
-            margin: "0 auto",
-            padding: "32px 20px 80px",
-          }
-        },
-        // Toast Notification
-        showToast && React.createElement(
-          "div",
-          {
-            style: {
-              position: "fixed",
-              bottom: 24,
-              right: 24,
-              background: COLORS.panelAlt,
-              border: `1px solid ${COLORS.gold}`,
-              color: COLORS.cream,
-              padding: "12px 20px",
-              borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
-              zIndex: 100,
-              fontSize: 13,
-              fontFamily: fontBody,
-              animation: "pillPop 0.2s ease"
-            }
-          },
-          "🔔 ", showToast
-        ),
-
-        // HEADER
-        React.createElement(
-          "header",
-          {
-            style: {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: `1px solid ${COLORS.line}`,
-              paddingBottom: 24,
-              marginBottom: 28,
-              flexWrap: "wrap",
-              gap: 16
-            }
-          },
-          React.createElement(
-            "div",
-            { style: { display: "flex", alignItems: "center", gap: 16 } },
-            React.createElement("img", {
-              src: "resorce/WhatsApp%20Image%202026-06-28%20at%201.40.53%20PM.jpeg",
-              style: {
-                width: 54,
-                height: 54,
-                borderRadius: 8,
-                objectFit: "cover",
-                border: `1px solid ${COLORS.line}`
-              },
-              alt: "Evergreen Team Logo"
-            }),
-            React.createElement(
-              "div",
-              null,
-              React.createElement(
-                "h1",
-                {
-                  style: {
-                    fontFamily: fontDisplay,
-                    fontSize: 32,
-                    color: COLORS.cream,
-                    margin: 0,
-                    letterSpacing: "0.02em",
-                    lineHeight: 1
-                  }
-                },
-                "Evergreen Team"
-              ),
-              React.createElement(
-                "div",
-                {
-                  style: {
-                    fontFamily: fontBody,
-                    fontSize: 11,
-                    color: COLORS.gold,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    marginTop: 6
-                  }
-                },
-                "Player Selection & Draft Board"
-              )
-            )
+      return React.createElement("div", { style: { maxWidth: 1024, margin: "0 auto", padding: "32px 20px 80px" } },
+        showToast && React.createElement("div", { style: { position: "fixed", bottom: 24, right: 24, background: COLORS.panelAlt, border: `1px solid ${COLORS.gold}`, color: COLORS.cream, padding: "12px 20px", borderRadius: 8, zIndex: 100 } }, "🔔 ", showToast),
+        React.createElement("header", { style: { display: "flex", justifyContent: "space-between", borderBottom: `1px solid ${COLORS.line}`, paddingBottom: 24, marginBottom: 28, flexWrap: "wrap", gap: 16 } },
+          React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 16 } },
+            React.createElement("div", null, React.createElement("h1", { style: { fontFamily: fontDisplay, fontSize: 32, color: COLORS.cream, margin: 0 } }, t("appTitle")), React.createElement("div", { style: { fontSize: 11, color: COLORS.gold, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 6 } }, t("draftBoardTitle")))
           ),
-          React.createElement(
-            "div",
-            { className: "no-print", style: { display: "flex", gap: 10 } },
-            React.createElement(
-              Btn,
-              {
-                onClick: () => { window.location.href = "EvergreenClub.html"; },
-                kind: "ghost"
-              },
-              "← Back to Scorer"
-            ),
-            React.createElement(
-              Btn,
-              {
-                onClick: () => window.print(),
-                kind: "ghost"
-              },
-              "🖨️ Print / PDF"
-            )
+          React.createElement("div", { className: "no-print", style: { display: "flex", gap: 10 } },
+            React.createElement(Btn, { onClick: () => window.location.href = "EvergreenClub.html", kind: "ghost" }, t("backToScorer")),
+            React.createElement(Btn, { onClick: () => window.print(), kind: "ghost" }, t("printPdf")),
+            React.createElement(Btn, { onClick: () => { const next = lang === "en" ? "bn" : "en"; setLang(next); localStorage.setItem("evergreenLang", next); }, kind: "primary" }, lang === "en" ? "বাংলা" : "English")
           )
         ),
-
-        // STATS BAR
-        React.createElement(
-          "div",
-          {
-            style: {
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: 16,
-              marginBottom: 24
-            }
-          },
-          React.createElement(
-            Panel,
-            { title: "Draft Statistics" },
-            React.createElement(
-              "div",
-              { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 } },
-              React.createElement(
-                "div",
-                { style: { fontFamily: fontDisplay, fontSize: 36, color: COLORS.cream, lineHeight: 1 } },
-                stats.selected,
-                React.createElement("span", { style: { color: COLORS.textMuted, fontSize: 20 } }, ` / ${stats.total}`)
-              ),
-              React.createElement(
-                "div",
-                { style: { fontFamily: fontMono, fontSize: 13, color: COLORS.gold } },
-                stats.pct,
-                "% selected"
-              )
-            ),
-            // Progress Bar
-            React.createElement(
-              "div",
-              {
-                style: {
-                  width: "100%",
-                  height: 6,
-                  background: COLORS.bg,
-                  borderRadius: 3,
-                  overflow: "hidden"
-                }
-              },
-              React.createElement(
-                "div",
-                {
-                  style: {
-                    width: `${stats.pct}%`,
-                    height: "100%",
-                    background: COLORS.gold,
-                    transition: "width 0.3s ease"
-                  }
-                }
-              )
-            )
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 } },
+          React.createElement(Panel, { title: t("draftStats") },
+            React.createElement("div", { style: { fontSize: 36, color: COLORS.cream } }, stats.selected, React.createElement("span", { style: { color: COLORS.textMuted, fontSize: 20 } }, ` / ${stats.total}`)),
+            React.createElement("div", { style: { width: "100%", height: 6, background: COLORS.bg, borderRadius: 3, marginTop: 10 } }, React.createElement("div", { style: { width: `${stats.pct}%`, height: "100%", background: COLORS.gold } }))
           ),
-          React.createElement(
-            Panel,
-            { title: "Quick Squad Assignment (localStorage)" },
-            React.createElement(
-              "div",
-              { style: { color: COLORS.textMuted, fontSize: 12, marginBottom: 12, lineHeight: 1.4 } },
-              "Select players below, then assign them. The Scorer Setup can load them directly."
-            ),
-            React.createElement(
-              "div",
-              { style: { display: "flex", gap: 10 } },
-              React.createElement(
-                Btn,
-                {
-                  onClick: () => handleAssignToTeam("A"),
-                  kind: "primary",
-                  style: { flex: 1, padding: "8px 10px", fontSize: 12 },
-                  disabled: stats.selected === 0
-                },
-                `Assign (${stats.selected}) to Team A`
-              ),
-              React.createElement(
-                Btn,
-                {
-                  onClick: () => handleAssignToTeam("B"),
-                  kind: "primary",
-                  style: { flex: 1, padding: "8px 10px", fontSize: 12 },
-                  disabled: stats.selected === 0
-                },
-                `Assign (${stats.selected}) to Team B`
-              )
+          React.createElement(Panel, { title: t("quickSquad") },
+            React.createElement("div", { style: { color: COLORS.textMuted, fontSize: 12, marginBottom: 12 } }, t("quickSquadDesc")),
+            React.createElement("div", { style: { display: "flex", gap: 10 } },
+              React.createElement(Btn, { onClick: () => handleAssignToTeam("A"), kind: "primary", disabled: stats.selected === 0 }, t("assignTeam", { count: stats.selected, team: "A" })),
+              React.createElement(Btn, { onClick: () => handleAssignToTeam("B"), kind: "primary", disabled: stats.selected === 0 }, t("assignTeam", { count: stats.selected, team: "B" }))
             )
           )
         ),
-
-        // CONTROLS PANEL
-        React.createElement(
-          Panel,
-          { className: "no-print", style: { marginBottom: 24 } },
-          React.createElement(
-            "div",
-            {
-              style: {
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 16,
-                alignItems: "center",
-                justifyContent: "space-between"
-              }
-            },
-            // Search and Add
-            React.createElement(
-              "div",
-              { style: { display: "flex", flexWrap: "wrap", gap: 12, flex: 1, minWidth: 300 } },
-              // Search input
-              React.createElement("input", {
-                type: "text",
-                placeholder: "🔍 Search players or notes...",
-                value: searchQuery,
-                onChange: (e) => setSearchQuery(e.target.value),
-                style: {
-                  background: COLORS.bg,
-                  border: `1px solid ${COLORS.line}`,
-                  color: COLORS.cream,
-                  padding: "8px 14px",
-                  borderRadius: 8,
-                  fontSize: 13,
-                  width: "100%",
-                  maxWidth: 240
-                }
-              }),
-              // Add player form
-              React.createElement(
-                "form",
-                { onSubmit: handleAddPlayer, style: { display: "flex", gap: 6, flex: 1, maxWidth: 300 } },
-                React.createElement("input", {
-                  type: "text",
-                  placeholder: "Add new player...",
-                  value: newPlayerName,
-                  onChange: (e) => setNewPlayerName(e.target.value),
-                  style: {
-                    background: COLORS.bg,
-                    border: `1px solid ${COLORS.line}`,
-                    color: COLORS.cream,
-                    padding: "8px 14px",
-                    borderRadius: 8,
-                    fontSize: 13,
-                    flex: 1
-                  }
-                }),
-                React.createElement(
-                  Btn,
-                  {
-                    type: "submit",
-                    kind: "primary",
-                    style: { padding: "8px 14px" }
-                  },
-                  "+"
-                )
-              )
+        React.createElement(Panel, { className: "no-print", style: { marginBottom: 24 } },
+          React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" } },
+            React.createElement("input", { type: "text", placeholder: t("searchPlaceholder"), value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8, width: 200 } }),
+            React.createElement("form", { onSubmit: handleAddPlayer }, React.createElement("input", { type: "text", placeholder: t("addPlayerPlaceholder"), value: newPlayerName, onChange: (e) => setNewPlayerName(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8 } })),
+            React.createElement("select", { value: sortBy, onChange: (e) => setSortBy(e.target.value), style: { background: COLORS.bg, color: COLORS.cream, padding: 8, borderRadius: 8 } },
+              React.createElement("option", { value: "original" }, t("sortOriginal")),
+              React.createElement("option", { value: "name-asc" }, t("sortNameAsc")),
+              React.createElement("option", { value: "name-desc" }, t("sortNameDesc")),
+              React.createElement("option", { value: "status-selected" }, t("sortStatusSelected")),
+              React.createElement("option", { value: "status-unselected" }, t("sortStatusUnselected"))
             ),
-
-            // Sorting and Export
-            React.createElement(
-              "div",
-              { style: { display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" } },
-              // Sort dropdown
-              React.createElement(
-                "div",
-                { style: { display: "flex", alignItems: "center", gap: 8 } },
-                React.createElement("span", { style: { fontSize: 12, color: COLORS.textMuted } }, "Sort:"),
-                React.createElement(
-                  "select",
-                  {
-                    value: sortBy,
-                    onChange: (e) => setSortBy(e.target.value),
-                    style: {
-                      background: COLORS.bg,
-                      border: `1px solid ${COLORS.line}`,
-                      color: COLORS.cream,
-                      padding: "8px 12px",
-                      borderRadius: 8,
-                      fontSize: 13,
-                      cursor: "pointer"
-                    }
-                  },
-                  React.createElement("option", { value: "original" }, "Original List Order"),
-                  React.createElement("option", { value: "name-asc" }, "Player Name (A-Z)"),
-                  React.createElement("option", { value: "name-desc" }, "Player Name (Z-A)"),
-                  React.createElement("option", { value: "status-selected" }, "Selected First"),
-                  React.createElement("option", { value: "status-unselected" }, "Unselected First")
-                )
-              ),
-              // Export CSV
-              React.createElement(
-                Btn,
-                { onClick: handleExportCSV, kind: "ghost", title: "Download editable CSV file" },
-                "📥 CSV"
-              ),
-              // Copy TSV
-              React.createElement(
-                Btn,
-                { onClick: handleCopyForSheets, kind: "ghost", title: "Copy table format for Excel/Google Sheets" },
-                "📋 Copy for Sheets"
-              )
-            )
+            React.createElement(Btn, { onClick: handleExportCSV, kind: "ghost" }, t("csvExport")),
+            React.createElement(Btn, { onClick: handleCopyForSheets, kind: "ghost" }, t("copySheets"))
           )
         ),
-
-        // MAIN TABLE PANEL
-        React.createElement(
-          Panel,
-          {
-            title: `Roster Pool (${processedPlayers.length} matches)`
-          },
-          processedPlayers.length === 0 ? 
-            React.createElement(
-              "div",
-              { style: { textAlign: "center", padding: "40px 0", color: COLORS.textMuted, fontSize: 14 } },
-              "No players found matching your search query."
-            ) :
-            React.createElement(
-              "div",
-              { style: { overflowX: "auto" } },
-              React.createElement(
-                "table",
-                { className: "draft-table" },
-                React.createElement(
-                  "thead",
-                  null,
-                  React.createElement(
-                    "tr",
-                    null,
-                    React.createElement("th", { className: "draft-th", style: { width: 50 } }, "#"),
-                    React.createElement("th", { className: "draft-th", style: { width: 80 } }, "Status"),
-                    React.createElement("th", { className: "draft-th", style: { width: 220 } }, "Player Name"),
-                    React.createElement("th", { className: "draft-th" }, "Notes & Remarks (Position / Ranking / Availability)"),
-                    React.createElement("th", { className: "draft-th no-print", style: { width: 80, textAlign: "center" } }, "Action")
-                  )
-                ),
-                React.createElement(
-                  "tbody",
-                  null,
-                  processedPlayers.map((player, index) => {
-                    return React.createElement(
-                      "tr",
-                      { key: player.id, className: "draft-tr" },
-                      // Number
-                      React.createElement(
-                        "td",
-                        {
-                          className: "draft-td",
-                          style: { fontFamily: fontMono, color: COLORS.textMuted, fontSize: 13 }
-                        },
-                        index + 1
-                      ),
-                      // Toggle Checkbox
-                      React.createElement(
-                        "td",
-                        { className: "draft-td" },
-                        React.createElement(
-                          "label",
-                          { className: "switch" },
-                          React.createElement("input", {
-                            type: "checkbox",
-                            checked: player.selected,
-                            onChange: () => handleToggleSelect(player.id)
-                          }),
-                          React.createElement("span", { className: "slider" })
-                        )
-                      ),
-                      // Player Name (Editable)
-                      React.createElement(
-                        "td",
-                        { className: "draft-td" },
-                        React.createElement("input", {
-                          type: "text",
-                          className: "editable-name-input",
-                          value: player.name,
-                          onChange: (e) => handleEditName(player.id, e.target.value),
-                          placeholder: "Enter player name"
-                        })
-                      ),
-                      // Notes (Editable)
-                      React.createElement(
-                        "td",
-                        { className: "draft-td" },
-                        React.createElement("input", {
-                          type: "text",
-                          className: "editable-notes-input",
-                          value: player.notes || "",
-                          onChange: (e) => handleEditNotes(player.id, e.target.value),
-                          placeholder: "Add remarks, position, availability..."
-                        })
-                      ),
-                      // Actions (Delete)
-                      React.createElement(
-                        "td",
-                        { className: "draft-td no-print", style: { textAlign: "center" } },
-                        React.createElement(
-                          Btn,
-                          {
-                            onClick: () => handleDeletePlayer(player.id, player.name),
-                            kind: "danger",
-                            style: { padding: "4px 8px", fontSize: 11 }
-                          },
-                          "Delete"
-                        )
-                      )
-                    );
-                  })
-                )
-              )
-            ),
-          
-          // Table Footer Reset controls
-          React.createElement(
-            "div",
-            {
-              className: "no-print",
-              style: {
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 20,
-                borderTop: `1px solid ${COLORS.line}`,
-                paddingTop: 16,
-                flexWrap: "wrap",
-                gap: 12
-              }
-            },
-            React.createElement(
-              Btn,
-              { onClick: handleResetPool, kind: "danger" },
-              "⚠️ Reset to Default 27 Players"
-            ),
-            React.createElement(
-              Btn,
-              { onClick: handleClearSelections, kind: "ghost" },
-              "🧹 Clear Selections & Remarks"
-            )
+        React.createElement(Panel, { title: t("rosterPool", { count: processedPlayers.length }) },
+          React.createElement("table", { className: "draft-table" },
+            React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", { className: "draft-th" }, t("indexCol")), React.createElement("th", { className: "draft-th" }, t("statusCol")), React.createElement("th", { className: "draft-th" }, t("nameCol")), React.createElement("th", { className: "draft-th" }, t("notesCol")), React.createElement("th", { className: "draft-th no-print" }, t("actionCol")))),
+            React.createElement("tbody", null, processedPlayers.map((player, index) => React.createElement("tr", { key: player.id },
+              React.createElement("td", { className: "draft-td" }, index + 1),
+              React.createElement("td", { className: "draft-td" }, React.createElement("label", { className: "switch" }, React.createElement("input", { type: "checkbox", checked: player.selected, onChange: () => handleToggleSelect(player.id) }), React.createElement("span", { className: "slider" }))),
+              React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-name-input", value: player.name, onChange: (e) => handleEditName(player.id, e.target.value), placeholder: t("enterPlayerName") })),
+              React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-notes-input", value: player.notes || "", onChange: (e) => handleEditNotes(player.id, e.target.value), placeholder: t("notesPlaceholder") })),
+              React.createElement("td", { className: "draft-td no-print" }, React.createElement(Btn, { onClick: () => handleDeletePlayer(player.id, player.name), kind: "danger" }, t("deleteBtn")))
+            )))
+          ),
+          React.createElement("div", { className: "no-print", style: { marginTop: 20, display: "flex", gap: 10 } },
+            React.createElement(Btn, { onClick: handleResetPool, kind: "danger" }, t("resetPoolBtn")),
+            React.createElement(Btn, { onClick: handleClearSelections, kind: "ghost" }, t("clearPoolBtn"))
           )
         )
       );
@@ -1265,4 +904,3 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 </script>
 </body>
 </html>
-
