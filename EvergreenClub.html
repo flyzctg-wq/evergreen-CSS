@@ -1685,6 +1685,118 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     );
   }
 
+  const ROLE_ICONS = {
+    rhb: () => React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: 14,
+      height: 14,
+      fill: "currentColor",
+      style: { display: "inline-block", verticalAlign: "middle", marginLeft: 6, opacity: 0.9 },
+      title: "Right-Handed Batsman"
+    },
+      React.createElement("path", { d: "M19.78 2.8a1.5 1.5 0 0 0-2.12 0l-4.24 4.24 1.41 1.41 4.24-4.24a1.5 1.5 0 0 0 0-2.12zM12.71 8.46l-1.41-1.41L3.5 14.83a2 2 0 0 0 0 2.83l2.83 2.83a2 2 0 0 0 2.83 0z" })
+    ),
+    lhb: () => React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: 14,
+      height: 14,
+      fill: "currentColor",
+      style: { display: "inline-block", verticalAlign: "middle", marginLeft: 6, opacity: 0.9, transform: "scaleX(-1)" },
+      title: "Left-Handed Batsman"
+    },
+      React.createElement("path", { d: "M19.78 2.8a1.5 1.5 0 0 0-2.12 0l-4.24 4.24 1.41 1.41 4.24-4.24a1.5 1.5 0 0 0 0-2.12zM12.71 8.46l-1.41-1.41L3.5 14.83a2 2 0 0 0 0 2.83l2.83 2.83a2 2 0 0 0 2.83 0z" })
+    ),
+    fast: () => React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: 14,
+      height: 14,
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      style: { display: "inline-block", verticalAlign: "middle", marginLeft: 6, opacity: 0.9 },
+      title: "Fast Bowler"
+    },
+      React.createElement("circle", { cx: 16, cy: 12, r: 5, fill: "currentColor", stroke: "none" }),
+      React.createElement("path", { d: "M2 8h8M4 12h6M2 16h8", strokeWidth: 1.5 })
+    ),
+    spin: () => React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: 14,
+      height: 14,
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      style: { display: "inline-block", verticalAlign: "middle", marginLeft: 6, opacity: 0.9 },
+      title: "Spin Bowler"
+    },
+      React.createElement("circle", { cx: 12, cy: 12, r: 4, fill: "currentColor", stroke: "none" }),
+      React.createElement("path", { d: "M12 4a8 8 0 0 1 8 8c0 1.5-.4 2.9-1.1 4.1" }),
+      React.createElement("path", { d: "M16 17.5l2.5 1.5.5-3" }),
+      React.createElement("path", { d: "M12 20a8 8 0 0 1-8-8c0-1.5.4-2.9 1.1-4.1" }),
+      React.createElement("path", { d: "M8 6.5L5.5 5l-.5 3" })
+    ),
+    wk: () => React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: 14,
+      height: 14,
+      fill: "currentColor",
+      style: { display: "inline-block", verticalAlign: "middle", marginLeft: 6, opacity: 0.9 },
+      title: "Wicket-keeper"
+    },
+      React.createElement("path", { d: "M7 6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1z" }),
+      React.createElement("path", { d: "M3 9a1 1 0 0 1 1-1h1v4H4a1 1 0 0 1-1-1V9z" }),
+      React.createElement("path", { d: "M17 6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1z" }),
+      React.createElement("path", { d: "M21 9a1 1 0 0 0-1-1h-1v4h1a1 1 0 0 0 1-1V9z" })
+    ),
+    ar: () => React.createElement("svg", {
+      viewBox: "0 0 24 24",
+      width: 15,
+      height: 15,
+      fill: "currentColor",
+      style: { display: "inline-block", verticalAlign: "middle", marginLeft: 6, opacity: 0.9 },
+      title: "All-rounder"
+    },
+      React.createElement("path", { d: "M16 2.5a1 1 0 0 0-1.41 0l-8.5 8.5 1.41 1.41 8.5-8.5a1 1 0 0 0 0-1.41zM6.5 13.5l-.7-.7-3.5 3.5a1.5 1.5 0 0 0 0 2.12l1.41 1.41a1.5 1.5 0 0 0 2.12 0l3.5-3.5-.7-.7L6.5 13.5z" }),
+      React.createElement("circle", { cx: 16, cy: 15, r: 3.5 })
+    )
+  };
+
+  function getPlayerRoleIcon(playerName) {
+    if (!playerName) return null;
+    const cleanName = playerName.replace(/\s*\((c|wk|sub|sub-inj|subbed)\)\s*/gi, "").trim().toLowerCase();
+    try {
+      const draftData = localStorage.getItem("evergreenTeamDraftPlayers");
+      if (draftData) {
+        const playersList = JSON.parse(draftData);
+        if (Array.isArray(playersList)) {
+          const found = playersList.find(p => p.name && p.name.trim().toLowerCase() === cleanName);
+          if (found) {
+            let role = found.role;
+            if (!role || role === "none") {
+              const notes = (found.notes || "").toLowerCase();
+              if (notes.includes("lhb") || notes.includes("left-handed batsman")) role = "lhb";
+              else if (notes.includes("rhb") || notes.includes("right-handed batsman")) role = "rhb";
+              else if (notes.includes("all-rounder") || notes.includes("all rounder") || notes.includes("ar")) role = "ar";
+              else if (notes.includes("wicket-keeper") || notes.includes("wicket keeper") || notes.includes("wk") || notes.includes("keeper")) role = "wk";
+              else if (notes.includes("fast") || notes.includes("seam") || notes.includes("pace")) role = "fast";
+              else if (notes.includes("spin")) role = "spin";
+            }
+            if (role && ROLE_ICONS[role]) {
+              return ROLE_ICONS[role]();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to lookup player role icon:", e);
+    }
+    return null;
+  }
+
   function InningsScorecard({ innings, matchConfig, label, lang }) {
     const battedOrder = innings.battingOrder.filter(
       (name) => innings.batsmen[name] && (innings.batsmen[name].balls > 0 || innings.batsmen[name].out)
@@ -1724,7 +1836,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           const dismissalText = b.out ? `${b.howOut.replace("_", " ").toLowerCase()}${b.outBy && !isRet ? " b. " + b.outBy : ""}` : "not out";
           const suffix = getSubSuffix(name);
           return React.createElement("tr", { key: name },
-            React.createElement("td", { className: "sc-td", style: { textAlign: "left", fontWeight: 600 } }, name, suffix && React.createElement("span", { style: { color: COLORS.textMuted, fontSize: 10, fontWeight: 400, marginLeft: 4 } }, suffix)),
+            React.createElement("td", { className: "sc-td", style: { textAlign: "left", fontWeight: 600 } }, 
+              name, 
+              getPlayerRoleIcon(name),
+              suffix && React.createElement("span", { style: { color: COLORS.textMuted, fontSize: 10, fontWeight: 400, marginLeft: 4 } }, suffix)
+            ),
             React.createElement("td", { className: "sc-td" }, b.runs),
             React.createElement("td", { className: "sc-td" }, b.balls),
             React.createElement("td", { className: "sc-td" }, b.fours),
@@ -1748,7 +1864,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         React.createElement("tbody", null, bowlersUsed.map((bw) => {
           const suffix = getSubSuffix(bw.name);
           return React.createElement("tr", { key: bw.name },
-            React.createElement("td", { className: "sc-td", style: { textAlign: "left", fontWeight: 600 } }, bw.name, suffix && React.createElement("span", { style: { color: COLORS.textMuted, fontSize: 10, fontWeight: 400, marginLeft: 4 } }, suffix)),
+            React.createElement("td", { className: "sc-td", style: { textAlign: "left", fontWeight: 600 } }, 
+              bw.name, 
+              getPlayerRoleIcon(bw.name),
+              suffix && React.createElement("span", { style: { color: COLORS.textMuted, fontSize: 10, fontWeight: 400, marginLeft: 4 } }, suffix)
+            ),
             React.createElement("td", { className: "sc-td" }, ballsToOverString(bw.legalBalls)),
             React.createElement("td", { className: "sc-td" }, bw.maidens),
             React.createElement("td", { className: "sc-td" }, bw.runs),

@@ -618,6 +618,47 @@ html, body {
     return ev.runsOffBat === 0 ? "•" : String(ev.runsOffBat);
   }
 
+  const ROLE_ICONS_HTML = {
+    rhb: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-left:6px; opacity:0.9;" title="Right-Handed Batsman"><path d="M19.78 2.8a1.5 1.5 0 0 0-2.12 0l-4.24 4.24 1.41 1.41 4.24-4.24a1.5 1.5 0 0 0 0-2.12zM12.71 8.46l-1.41-1.41L3.5 14.83a2 2 0 0 0 0 2.83l2.83 2.83a2 2 0 0 0 2.83 0z"/></svg>`,
+    lhb: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-left:6px; opacity:0.9; transform:scaleX(-1);" title="Left-Handed Batsman"><path d="M19.78 2.8a1.5 1.5 0 0 0-2.12 0l-4.24 4.24 1.41 1.41 4.24-4.24a1.5 1.5 0 0 0 0-2.12zM12.71 8.46l-1.41-1.41L3.5 14.83a2 2 0 0 0 0 2.83l2.83 2.83a2 2 0 0 0 2.83 0z"/></svg>`,
+    fast: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-left:6px; opacity:0.9;" title="Fast Bowler"><circle cx="16" cy="12" r="5" fill="currentColor" stroke="none" /><path d="M2 8h8M4 12h6M2 16h8" stroke-width="1.5" /></svg>`,
+    spin: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-left:6px; opacity:0.9;" title="Spin Bowler"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" /><path d="M12 4a8 8 0 0 1 8 8c0 1.5-.4 2.9-1.1 4.1" /><path d="M16 17.5l2.5 1.5.5-3" /><path d="M12 20a8 8 0 0 1-8-8c0-1.5.4-2.9 1.1-4.1" /><path d="M8 6.5L5.5 5l-.5 3" /></svg>`,
+    wk: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-left:6px; opacity:0.9;" title="Wicket-keeper"><path d="M7 6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1z" /><path d="M3 9a1 1 0 0 1 1-1h1v4H4a1 1 0 0 1-1-1V9z" /><path d="M17 6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1z" /><path d="M21 9a1 1 0 0 0-1-1h-1v4h1a1 1 0 0 0 1-1V9z" /></svg>`,
+    ar: `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-left:6px; opacity:0.9;" title="All-rounder"><path d="M16 2.5a1 1 0 0 0-1.41 0l-8.5 8.5 1.41 1.41 8.5-8.5a1 1 0 0 0 0-1.41zM6.5 13.5l-.7-.7-3.5 3.5a1.5 1.5 0 0 0 0 2.12l1.41 1.41a1.5 1.5 0 0 0 2.12 0l3.5-3.5-.7-.7L6.5 13.5z" /><circle cx="16" cy="15" r="3.5" /></svg>`
+  };
+
+  function getPlayerRoleIconHTML(playerName) {
+    if (!playerName) return "";
+    const cleanName = playerName.replace(/\s*\((c|wk|sub|sub-inj|subbed)\)\s*/gi, "").trim().toLowerCase();
+    try {
+      const draftData = localStorage.getItem("evergreenTeamDraftPlayers");
+      if (draftData) {
+        const playersList = JSON.parse(draftData);
+        if (Array.isArray(playersList)) {
+          const found = playersList.find(p => p.name && p.name.trim().toLowerCase() === cleanName);
+          if (found) {
+            let role = found.role;
+            if (!role || role === "none") {
+              const notes = (found.notes || "").toLowerCase();
+              if (notes.includes("lhb") || notes.includes("left-handed batsman")) role = "lhb";
+              else if (notes.includes("rhb") || notes.includes("right-handed batsman")) role = "rhb";
+              else if (notes.includes("all-rounder") || notes.includes("all rounder") || notes.includes("ar")) role = "ar";
+              else if (notes.includes("wicket-keeper") || notes.includes("wicket keeper") || notes.includes("wk") || notes.includes("keeper")) role = "wk";
+              else if (notes.includes("fast") || notes.includes("seam") || notes.includes("pace")) role = "fast";
+              else if (notes.includes("spin")) role = "spin";
+            }
+            if (role && ROLE_ICONS_HTML[role]) {
+              return ROLE_ICONS_HTML[role];
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to lookup player role icon:", e);
+    }
+    return "";
+  }
+
   function inningsScorecardHTML(inn, labelVal) {
     const battedOrder = inn.battingOrder.filter(n => inn.batsmen[n] && (inn.batsmen[n].balls > 0 || inn.batsmen[n].out));
     const bowlersUsed = Object.values(inn.bowlers).filter(b => b.legalBalls > 0);
@@ -661,7 +702,7 @@ html, body {
       const dis = b.out ? `${displayOutType}${b.outBy && !isRet ? " b. " + b.outBy : ""}` : t("notOut");
       const suffix = getSubSuffix(name);
       const suffixSpan = suffix ? `<span style="color:var(--muted);font-size:10px;font-weight:400;margin-left:4px">${esc(suffix)}</span>` : "";
-      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(name)}${suffixSpan}</td>`;
+      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(name)}${getPlayerRoleIconHTML(name)}${suffixSpan}</td>`;
       h += `<td class="sc-td" style="text-align:center">${b.runs}</td>`;
       h += `<td class="sc-td" style="text-align:center">${b.balls}</td>`;
       h += `<td class="sc-td" style="text-align:center">${b.fours}</td>`;
@@ -686,8 +727,8 @@ html, body {
     bowlersUsed.forEach(bw => {
       const econ = bw.legalBalls > 0 ? (bw.runs / bw.legalBalls * 6).toFixed(2) : "0.00";
       const suffix = getSubSuffix(bw.name);
-      const suffixSpan = suffix ? `<span style="color:var(--muted);font-size:10px;font-weight:400;margin-left:4px">${esc(bw.name)}${suffixSpan}</span>` : "";
-      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(bw.name)}${suffixSpan}</td>`;
+      const suffixSpan = suffix ? `<span style="color:var(--muted);font-size:10px;font-weight:400;margin-left:4px">${esc(suffix)}</span>` : "";
+      h += `<tr><td class="sc-td" style="text-align:left;font-weight:600;font-family:Inter,sans-serif">${esc(bw.name)}${getPlayerRoleIconHTML(bw.name)}${suffixSpan}</td>`;
       h += `<td class="sc-td" style="text-align:center">${ballsToOv(bw.legalBalls)}</td>`;
       h += `<td class="sc-td" style="text-align:center">${bw.maidens}</td>`;
       h += `<td class="sc-td" style="text-align:center">${bw.runs}</td>`;

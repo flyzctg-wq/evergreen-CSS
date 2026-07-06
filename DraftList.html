@@ -532,6 +532,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         indexCol: "#",
         statusCol: "Status",
         nameCol: "Player Name",
+        roleCol: "Role",
         notesCol: "Notes & Remarks (Position / Ranking / Availability)",
         actionCol: "Action",
         deleteBtn: "Delete",
@@ -580,6 +581,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         indexCol: "ক্রমিক",
         statusCol: "অবস্থা",
         nameCol: "খেলোয়াড়ের নাম",
+        roleCol: "ভূমিকা / রোল",
         notesCol: "নোট ও মন্তব্য (পজিশন / র‍্যাংকিং / প্রাপ্যতা)",
         actionCol: "অ্যাকশন",
         deleteBtn: "মুছুন",
@@ -727,9 +729,14 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       const [players, setPlayers] = useState(() => {
         try {
           const stored = localStorage.getItem("evergreenTeamDraftPlayers");
-          if (stored) return JSON.parse(stored);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              return parsed.map(p => ({ role: "none", ...p }));
+            }
+          }
         } catch (e) { console.error(e); }
-        return DEFAULT_PLAYERS.map(p => ({ ...p }));
+        return DEFAULT_PLAYERS.map(p => ({ role: "none", ...p }));
       });
 
       const [searchQuery, setSearchQuery] = useState("");
@@ -762,8 +769,34 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         setPlayers(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
       };
 
+      const detectRoleFromNotes = (notes) => {
+        if (!notes) return null;
+        const n = notes.toLowerCase();
+        if (n.includes("lhb") || n.includes("left-handed batsman")) return "lhb";
+        if (n.includes("rhb") || n.includes("right-handed batsman")) return "rhb";
+        if (n.includes("all-rounder") || n.includes("all rounder") || n.includes("ar")) return "ar";
+        if (n.includes("wicket-keeper") || n.includes("wicket keeper") || n.includes("wk") || n.includes("keeper")) return "wk";
+        if (n.includes("fast") || n.includes("seam") || n.includes("pace")) return "fast";
+        if (n.includes("spin")) return "spin";
+        return null;
+      };
+
       const handleEditNotes = (id, newNotes) => {
-        setPlayers(prev => prev.map(p => p.id === id ? { ...p, notes: newNotes } : p));
+        setPlayers(prev => prev.map(p => {
+          if (p.id === id) {
+            const detected = detectRoleFromNotes(newNotes);
+            return {
+              ...p,
+              notes: newNotes,
+              role: detected || p.role || "none"
+            };
+          }
+          return p;
+        }));
+      };
+
+      const handleEditRole = (id, newRole) => {
+        setPlayers(prev => prev.map(p => p.id === id ? { ...p, role: newRole } : p));
       };
 
       const handleAddPlayer = (e) => {
@@ -771,7 +804,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         const trimmed = newPlayerName.trim();
         if (!trimmed) return;
         const nextId = players.reduce((max, p) => p.id > max ? p.id : max, 0) + 1;
-        setPlayers(prev => [...prev, { id: nextId, name: trimmed, selected: false, notes: "" }]);
+        setPlayers(prev => [...prev, { id: nextId, name: trimmed, selected: false, notes: "", role: "none" }]);
         setNewPlayerName("");
         triggerToast(t("addedPlayerMsg", { name: trimmed }));
       };
@@ -785,14 +818,14 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
       const handleResetPool = () => {
         if (confirm(t("confirmReset"))) {
-          setPlayers(DEFAULT_PLAYERS.map(p => ({ ...p })));
+          setPlayers(DEFAULT_PLAYERS.map(p => ({ role: "none", ...p })));
           triggerToast(t("resetPoolMsg"));
         }
       };
 
       const handleClearSelections = () => {
         if (confirm(t("confirmClear"))) {
-          setPlayers(prev => prev.map(p => ({ ...p, selected: false, notes: "" })));
+          setPlayers(prev => prev.map(p => ({ ...p, selected: false, notes: "", role: "none" })));
           triggerToast(t("clearPoolMsg"));
         }
       };
@@ -880,11 +913,36 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         ),
         React.createElement(Panel, { title: t("rosterPool", { count: processedPlayers.length }) },
           React.createElement("table", { className: "draft-table" },
-            React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", { className: "draft-th" }, t("indexCol")), React.createElement("th", { className: "draft-th" }, t("statusCol")), React.createElement("th", { className: "draft-th" }, t("nameCol")), React.createElement("th", { className: "draft-th" }, t("notesCol")), React.createElement("th", { className: "draft-th no-print" }, t("actionCol")))),
+            React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", { className: "draft-th" }, t("indexCol")), React.createElement("th", { className: "draft-th" }, t("statusCol")), React.createElement("th", { className: "draft-th" }, t("nameCol")), React.createElement("th", { className: "draft-th" }, t("roleCol")), React.createElement("th", { className: "draft-th" }, t("notesCol")), React.createElement("th", { className: "draft-th no-print" }, t("actionCol")))),
             React.createElement("tbody", null, processedPlayers.map((player, index) => React.createElement("tr", { key: player.id },
               React.createElement("td", { className: "draft-td" }, index + 1),
               React.createElement("td", { className: "draft-td" }, React.createElement("label", { className: "switch" }, React.createElement("input", { type: "checkbox", checked: player.selected, onChange: () => handleToggleSelect(player.id) }), React.createElement("span", { className: "slider" }))),
               React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-name-input", value: player.name, onChange: (e) => handleEditName(player.id, e.target.value), placeholder: t("enterPlayerName") })),
+              React.createElement("td", { className: "draft-td" }, 
+                React.createElement("select", {
+                  value: player.role || "none",
+                  onChange: (e) => handleEditRole(player.id, e.target.value),
+                  style: {
+                    background: COLORS.panelAlt,
+                    border: `1px solid ${COLORS.line}`,
+                    color: COLORS.cream,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontFamily: fontBody,
+                    cursor: "pointer",
+                    outline: "none"
+                  }
+                },
+                  React.createElement("option", { value: "none" }, "—"),
+                  React.createElement("option", { value: "rhb" }, "Right-Handed Batsman (RHB)"),
+                  React.createElement("option", { value: "lhb" }, "Left-Handed Batsman (LHB)"),
+                  React.createElement("option", { value: "fast" }, "Fast Bowler"),
+                  React.createElement("option", { value: "spin" }, "Spin Bowler"),
+                  React.createElement("option", { value: "wk" }, "Wicket-keeper"),
+                  React.createElement("option", { value: "ar" }, "All-rounder")
+                )
+              ),
               React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-notes-input", value: player.notes || "", onChange: (e) => handleEditNotes(player.id, e.target.value), placeholder: t("notesPlaceholder") })),
               React.createElement("td", { className: "draft-td no-print" }, React.createElement(Btn, { onClick: () => handleDeletePlayer(player.id, player.name), kind: "danger" }, t("deleteBtn")))
             )))
