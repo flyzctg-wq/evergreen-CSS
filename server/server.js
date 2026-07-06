@@ -115,8 +115,12 @@ app.post("/api/auth/register", async (req, res) => {
     createdAt: Date.now()
   };
 
-  await authUtils.saveUser(newUser);
-  res.json({ success: true, message: "Registration successful." });
+  try {
+    await authUtils.saveUser(newUser);
+    res.json({ success: true, message: "Registration successful." });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -223,10 +227,13 @@ app.post("/api/auth/reset", async (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
 
-    user.passwordHash = authUtils.hashPassword(newPassword);
-    await authUtils.saveUser(user);
-
-    return res.json({ success: true, message: "Password has been successfully updated." });
+    try {
+      user.passwordHash = authUtils.hashPassword(newPassword);
+      await authUtils.saveUser(user);
+      return res.json({ success: true, message: "Password has been successfully updated." });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   res.status(400).json({ error: "Invalid action." });

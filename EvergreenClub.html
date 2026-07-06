@@ -910,11 +910,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     const [loading, setLoading] = useState(false);
 
     const validatePassword = (pw) => {
-      if (pw.length < 8) return "Password must be at least 8 characters.";
-      if (!/[A-Z]/.test(pw)) return "Password must contain at least one uppercase letter.";
-      if (!/[a-z]/.test(pw)) return "Password must contain at least one lowercase letter.";
-      if (!/[0-9]/.test(pw)) return "Password must contain at least one digit.";
-      if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) return "Password must contain at least one special character.";
+      if (!/^\d{6}$/.test(pw)) return "Password must be exactly 6 digits.";
       return null;
     };
 

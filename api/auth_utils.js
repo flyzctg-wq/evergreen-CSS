@@ -28,16 +28,8 @@ function validatePassword(password) {
   if (!password || typeof password !== "string") {
     return "Password must be a string.";
   }
-  if (password.length < 8) {
-    return "Password must be at least 8 characters long.";
-  }
-  const hasUpper = /[A-Z]/.test(password);
-  const hasLower = /[a-z]/.test(password);
-  const hasDigit = /\d/.test(password);
-  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-  
-  if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
-    return "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
+  if (!/^\d{6}$/.test(password)) {
+    return "Password must be exactly 6 digits.";
   }
   return null;
 }
@@ -210,11 +202,17 @@ async function saveUser(user) {
   if (!user || !user.email) return false;
   const key = user.email.toLowerCase().trim();
   
+  const isVercel = process.env.VERCEL === "1" || !!process.env.NOW_REGION;
+  const kv = getKV();
+  
+  if (isVercel && !kv) {
+    throw new Error("Vercel KV database is not configured. Please create and connect a KV database in your Vercel project dashboard (Storage tab) to enable persistent registration/resets.");
+  }
+  
   // Update memory state
   memoryUsers.set(key, user);
   
   // 1. Save to Vercel KV
-  const kv = getKV();
   let savedKV = false;
   if (kv) {
     try {
