@@ -124,6 +124,13 @@ function verifyJWT(token, secret) {
 
 // Helper to check if Vercel KV is available
 function getKV() {
+  if (process.env.UPSTASH_REDIS_REST_URL && !process.env.KV_REST_API_URL) {
+    process.env.KV_REST_API_URL = process.env.UPSTASH_REDIS_REST_URL;
+  }
+  if (process.env.UPSTASH_REDIS_REST_TOKEN && !process.env.KV_REST_API_TOKEN) {
+    process.env.KV_REST_API_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  }
+
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
   try {
     return require("@vercel/kv").kv;
