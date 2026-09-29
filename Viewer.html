@@ -270,6 +270,18 @@ html, body {
   padding: 3px 10px;
 }
 .no-balls-msg { color: var(--muted); font-family: 'Inter', sans-serif; font-size: 13px; }
+
+#lang-toggle-btn:hover {
+  border-color: var(--gold) !important;
+  background: var(--line) !important;
+}
+#lang-toggle-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+#lang-toggle-btn:active {
+  transform: scale(0.96);
+}
 </style>
 </head>
 <body>
@@ -285,7 +297,7 @@ html, body {
       </div>
     </div>
     <!-- Language toggle button -->
-    <button id="lang-toggle-btn" style="background:var(--panelAlt);border:1px solid var(--line);color:var(--cream);cursor:pointer;font-family:inherit;font-size:11px;padding:6px 12px;border-radius:20px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;transition:all 0.2s">বাংলা</button>
+    <button id="lang-toggle-btn" aria-label="Switch language to Bangla" title="Switch language to Bangla" style="background:var(--panelAlt);border:1px solid var(--line);color:var(--cream);cursor:pointer;font-family:inherit;font-size:11px;padding:6px 12px;border-radius:20px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;transition:all 0.2s">বাংলা</button>
   </div>
 
   <!-- Status bar -->
@@ -512,7 +524,11 @@ html, body {
   function translatePage() {
     const $toggle = document.getElementById("lang-toggle-btn");
     if ($toggle) {
-      $toggle.textContent = currentLang === "en" ? "বাংলা" : "English";
+      const isEn = currentLang === "en";
+      $toggle.textContent = isEn ? "বাংলা" : "English";
+      const ariaText = isEn ? "Switch language to Bangla" : "Switch language to English";
+      $toggle.setAttribute("aria-label", ariaText);
+      $toggle.setAttribute("title", ariaText);
     }
     
     // Update headers and labels
