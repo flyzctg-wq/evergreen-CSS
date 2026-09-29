@@ -44,13 +44,27 @@ function hashPassword(password) {
 }
 
 /**
- * Verifies password matching.
+ * Timing-safe string comparison helper to prevent timing side-channel attacks.
+ * Standard equality operators (===) terminate early on mismatched characters,
+ * allowing attackers to measure execution time differences to deduce secrets.
+ */
+function safeCompare(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/**
+ * Verifies password matching using timing-safe comparison.
  */
 function verifyPassword(password, stored) {
   if (!stored || !stored.includes(":")) return false;
   const [salt, hash] = stored.split(":");
   const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
-  return hash === checkHash;
+  // Prevent timing attacks by using constant-time string comparison
+  return safeCompare(hash, checkHash);
 }
 
 /**
@@ -112,7 +126,8 @@ function verifyJWT(token, secret) {
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
       
-    if (signatureStr !== expectedSignature) return null;
+    // Prevent timing attacks on HMAC signature verification using constant-time comparison
+    if (!safeCompare(signatureStr, expectedSignature)) return null;
     
     const payload = base64UrlDecode(payloadStr);
     if (payload.exp && Date.now() / 1000 > payload.exp) return null; // Expired
