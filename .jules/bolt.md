@@ -1,0 +1,3 @@
+## 2026-09-29 - Cache Draft Player Map for Scorecard Icon Lookups
+**Learning:** In high-frequency rendering flows (like live 1s polling or Socket.io scoreboard updates), helper functions called inside iteration loops over players (batters and bowlers) can become bottlenecks if they perform synchronous `localStorage.getItem()` reads, `JSON.parse()`, or linear `.find()` operations on every cell render.
+**Action:** Parse `localStorage` data into a cached `Map` keyed by normalized player name once per storage change, providing $O(1)$ lookups and skipping repeated disk storage access and JSON string parsing per render frame.
