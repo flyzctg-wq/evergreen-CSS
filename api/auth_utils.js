@@ -139,22 +139,35 @@ function getKV() {
   }
 }
 
+// ── In-Memory Caching for Local User File DB ──────────────────────────────────
+// Performance optimization (Bolt ⚡): Cache loaded users in memory and check
+// file mtime to avoid synchronous fs reads/JSON parsing on every getUser() call.
+let fileUsersCache = null;
+let lastFileMtimeMs = 0;
+
 /**
- * Local file-based user loading
+ * Local file-based user loading with in-memory caching
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      const stat = fs.statSync(LOCAL_DB_PATH);
+      // Return cached user map if file has not been modified
+      if (fileUsersCache && stat.mtimeMs === lastFileMtimeMs) {
+        return fileUsersCache;
+      }
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
+      fileUsersCache = map;
+      lastFileMtimeMs = stat.mtimeMs;
       return map;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  return fileUsersCache || new Map();
 }
 
 /**
@@ -169,6 +182,10 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    // Update cache and timestamp after write
+    const stat = fs.statSync(LOCAL_DB_PATH);
+    fileUsersCache = map;
+    lastFileMtimeMs = stat.mtimeMs;
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
