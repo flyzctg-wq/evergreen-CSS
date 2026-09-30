@@ -1,0 +1,3 @@
+## 2026-03-31 - Accessible Dynamic Table Form Controls
+**Learning:** Dynamic inline form controls in HTML tables (like toggle switch checkboxes, editable inputs, and select dropdowns) lack visible `<label>` tags associated via `htmlFor`. Screen reader users navigating tabular inputs hear generic control announcements (e.g., "checkbox, unchecked") without knowing which record item is being edited.
+**Action:** Always provide contextual `aria-label` attributes (e.g., `aria-label={`${t("statusCol")}: ${player.name}`}`) on inline table inputs and controls so screen readers clearly announce both the field purpose and associated record item.
