@@ -1765,34 +1765,55 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
     )
   };
 
-  function getPlayerRoleIcon(playerName) {
-    if (!playerName) return null;
-    const cleanName = playerName.replace(/\s*\((c|wk|sub|sub-inj|subbed)\)\s*/gi, "").trim().toLowerCase();
+  // Optimization (Bolt): Cache parsed player role map in memory to avoid redundant
+  // localStorage reads, JSON parses, and linear array searches on every component render.
+  let _cachedDraftRawClub = null;
+  let _cachedRoleMapClub = new Map();
+
+  function getPlayerRoleIconMapClub() {
     try {
       const draftData = localStorage.getItem("evergreenTeamDraftPlayers");
+      if (draftData === _cachedDraftRawClub) {
+        return _cachedRoleMapClub;
+      }
+      _cachedDraftRawClub = draftData;
+      _cachedRoleMapClub = new Map();
       if (draftData) {
         const playersList = JSON.parse(draftData);
         if (Array.isArray(playersList)) {
-          const found = playersList.find(p => p.name && p.name.trim().toLowerCase() === cleanName);
-          if (found) {
-            let role = found.role;
-            if (!role || role === "none") {
-              const notes = (found.notes || "").toLowerCase();
-              if (notes.includes("lhb") || notes.includes("left-handed batsman")) role = "lhb";
-              else if (notes.includes("rhb") || notes.includes("right-handed batsman")) role = "rhb";
-              else if (notes.includes("all-rounder") || notes.includes("all rounder") || notes.includes("ar")) role = "ar";
-              else if (notes.includes("wicket-keeper") || notes.includes("wicket keeper") || notes.includes("wk") || notes.includes("keeper")) role = "wk";
-              else if (notes.includes("fast") || notes.includes("seam") || notes.includes("pace")) role = "fast";
-              else if (notes.includes("spin")) role = "spin";
+          playersList.forEach(p => {
+            if (p && p.name) {
+              const cleanName = p.name.replace(/\s*\((c|wk|sub|sub-inj|subbed)\)\s*/gi, "").trim().toLowerCase();
+              let role = p.role;
+              if (!role || role === "none") {
+                const notes = (p.notes || "").toLowerCase();
+                if (notes.includes("lhb") || notes.includes("left-handed batsman")) role = "lhb";
+                else if (notes.includes("rhb") || notes.includes("right-handed batsman")) role = "rhb";
+                else if (notes.includes("all-rounder") || notes.includes("all rounder") || notes.includes("ar")) role = "ar";
+                else if (notes.includes("wicket-keeper") || notes.includes("wicket keeper") || notes.includes("wk") || notes.includes("keeper")) role = "wk";
+                else if (notes.includes("fast") || notes.includes("seam") || notes.includes("pace")) role = "fast";
+                else if (notes.includes("spin")) role = "spin";
+              }
+              if (role) {
+                _cachedRoleMapClub.set(cleanName, role);
+              }
             }
-            if (role && ROLE_ICONS[role]) {
-              return ROLE_ICONS[role]();
-            }
-          }
+          });
         }
       }
     } catch (e) {
       console.error("Failed to lookup player role icon:", e);
+    }
+    return _cachedRoleMapClub;
+  }
+
+  function getPlayerRoleIcon(playerName) {
+    if (!playerName) return null;
+    const cleanName = playerName.replace(/\s*\((c|wk|sub|sub-inj|subbed)\)\s*/gi, "").trim().toLowerCase();
+    const roleMap = getPlayerRoleIconMapClub();
+    const role = roleMap.get(cleanName);
+    if (role && ROLE_ICONS[role]) {
+      return ROLE_ICONS[role]();
     }
     return null;
   }
