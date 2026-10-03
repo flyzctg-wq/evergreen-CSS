@@ -627,34 +627,54 @@ html, body {
     ar: `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-left:6px; opacity:0.9;" title="All-rounder"><path d="M16 2.5a1 1 0 0 0-1.41 0l-8.5 8.5 1.41 1.41 8.5-8.5a1 1 0 0 0 0-1.41zM6.5 13.5l-.7-.7-3.5 3.5a1.5 1.5 0 0 0 0 2.12l1.41 1.41a1.5 1.5 0 0 0 2.12 0l3.5-3.5-.7-.7L6.5 13.5z" /><circle cx="16" cy="15" r="3.5" /></svg>`
   };
 
-  function getPlayerRoleIconHTML(playerName) {
-    if (!playerName) return "";
-    const cleanName = playerName.replace(/\s*\((c|wk|sub|sub-inj|subbed)\)\s*/gi, "").trim().toLowerCase();
+  // Memoized cache for draft player roles to avoid redundant localStorage reads and JSON.parse in render loops
+  let cachedDraftRaw = null;
+  let cachedRoleMap = new Map();
+
+  function getDraftRoleMap() {
     try {
       const draftData = localStorage.getItem("evergreenTeamDraftPlayers");
-      if (draftData) {
-        const playersList = JSON.parse(draftData);
-        if (Array.isArray(playersList)) {
-          const found = playersList.find(p => p.name && p.name.trim().toLowerCase() === cleanName);
-          if (found) {
-            let role = found.role;
-            if (!role || role === "none") {
-              const notes = (found.notes || "").toLowerCase();
-              if (notes.includes("lhb") || notes.includes("left-handed batsman")) role = "lhb";
-              else if (notes.includes("rhb") || notes.includes("right-handed batsman")) role = "rhb";
-              else if (notes.includes("all-rounder") || notes.includes("all rounder") || notes.includes("ar")) role = "ar";
-              else if (notes.includes("wicket-keeper") || notes.includes("wicket keeper") || notes.includes("wk") || notes.includes("keeper")) role = "wk";
-              else if (notes.includes("fast") || notes.includes("seam") || notes.includes("pace")) role = "fast";
-              else if (notes.includes("spin")) role = "spin";
-            }
-            if (role && ROLE_ICONS_HTML[role]) {
-              return ROLE_ICONS_HTML[role];
+      if (draftData !== cachedDraftRaw) {
+        cachedDraftRaw = draftData;
+        cachedRoleMap.clear();
+        if (draftData) {
+          const playersList = JSON.parse(draftData);
+          if (Array.isArray(playersList)) {
+            for (let i = 0; i < playersList.length; i++) {
+              const p = playersList[i];
+              if (p && p.name) {
+                const key = p.name.trim().toLowerCase();
+                let role = p.role;
+                if (!role || role === "none") {
+                  const notes = (p.notes || "").toLowerCase();
+                  if (notes.includes("lhb") || notes.includes("left-handed batsman")) role = "lhb";
+                  else if (notes.includes("rhb") || notes.includes("right-handed batsman")) role = "rhb";
+                  else if (notes.includes("all-rounder") || notes.includes("all rounder") || notes.includes("ar")) role = "ar";
+                  else if (notes.includes("wicket-keeper") || notes.includes("wicket keeper") || notes.includes("wk") || notes.includes("keeper")) role = "wk";
+                  else if (notes.includes("fast") || notes.includes("seam") || notes.includes("pace")) role = "fast";
+                  else if (notes.includes("spin")) role = "spin";
+                }
+                if (role && role !== "none") {
+                  cachedRoleMap.set(key, role);
+                }
+              }
             }
           }
         }
       }
     } catch (e) {
-      console.error("Failed to lookup player role icon:", e);
+      console.error("Failed to load draft role map:", e);
+    }
+    return cachedRoleMap;
+  }
+
+  function getPlayerRoleIconHTML(playerName) {
+    if (!playerName) return "";
+    const cleanName = playerName.replace(/\s*\((c|wk|sub|sub-inj|subbed)\)\s*/gi, "").trim().toLowerCase();
+    const roleMap = getDraftRoleMap();
+    const role = roleMap.get(cleanName);
+    if (role && ROLE_ICONS_HTML[role]) {
+      return ROLE_ICONS_HTML[role];
     }
     return "";
   }
