@@ -139,26 +139,38 @@ function getKV() {
   }
 }
 
+// PERFORMANCE OPTIMIZATION:
+// In-memory cache for local file-based users map and last modified timestamp (mtimeMs).
+// Prevents redundant synchronous disk I/O (fs.readFileSync) and JSON parsing on every user lookup call.
+let fileUsersCache = null;
+let fileUsersMtime = 0;
+
 /**
- * Local file-based user loading
+ * Local file-based user loading with in-memory caching.
  */
 function loadUsersFromFile() {
   try {
-    if (fs.existsSync(LOCAL_DB_PATH)) {
-      const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
-      const list = JSON.parse(data);
-      const map = new Map();
-      list.forEach(u => map.set(u.email.toLowerCase(), u));
-      return map;
+    const stat = fs.statSync(LOCAL_DB_PATH);
+    if (fileUsersCache && stat.mtimeMs === fileUsersMtime) {
+      return fileUsersCache;
     }
+    const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
+    const list = JSON.parse(data);
+    const map = new Map();
+    list.forEach(u => map.set(u.email.toLowerCase(), u));
+    fileUsersCache = map;
+    fileUsersMtime = stat.mtimeMs;
+    return fileUsersCache;
   } catch (e) {
-    console.error("Failed to load users from file", e);
+    if (e.code !== "ENOENT") {
+      console.error("Failed to load users from file", e);
+    }
   }
-  return new Map();
+  return fileUsersCache || new Map();
 }
 
 /**
- * Local file-based user saving
+ * Local file-based user saving. Updates in-memory cache synchronously.
  */
 function saveUsersToFile(map) {
   try {
@@ -169,6 +181,12 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    fileUsersCache = map;
+    try {
+      fileUsersMtime = fs.statSync(LOCAL_DB_PATH).mtimeMs;
+    } catch {
+      fileUsersMtime = Date.now();
+    }
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
