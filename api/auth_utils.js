@@ -139,29 +139,42 @@ function getKV() {
   }
 }
 
+// Performance Optimization (⚡ Bolt):
+// In-memory cache for local file-based user store to avoid expensive synchronous
+// disk I/O (fs.readFileSync) and JSON parsing (JSON.parse) on every `getUser` call.
+let fileUsersCache = null;
+
 /**
  * Local file-based user loading
+ * Cached in memory after initial read to prevent blocking synchronous I/O.
  */
 function loadUsersFromFile() {
+  if (fileUsersCache !== null) {
+    return fileUsersCache;
+  }
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
-      return map;
+      fileUsersCache = map;
+      return fileUsersCache;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  fileUsersCache = new Map();
+  return fileUsersCache;
 }
 
 /**
  * Local file-based user saving
+ * Keeps the in-memory cache synchronized with disk writes.
  */
 function saveUsersToFile(map) {
   try {
+    fileUsersCache = map;
     const list = Array.from(map.values());
     // Ensure parent directory exists
     const dir = path.dirname(LOCAL_DB_PATH);
