@@ -2895,6 +2895,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => window.print(),
+              "aria-label": t("printScorecardBtn"),
+              title: t("printScorecardBtn"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2913,6 +2915,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             {
               disabled: undoStack.length === 0,
               onClick: undoBall,
+              "aria-label": "Undo delivery",
+              title: "Undo delivery",
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2931,6 +2935,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowEditScore(true),
+              "aria-label": t("manualCorrectionTitle"),
+              title: t("manualCorrectionTitle"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2948,6 +2954,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowViewerPanel(v => !v),
+              "aria-label": t("viewerLinkTitle"),
+              title: t("viewerLinkTitle"),
               style: {
                 background: showViewerPanel ? "rgba(92,138,90,0.15)" : "none",
                 border: `1px solid ${showViewerPanel ? COLORS.green : COLORS.line}`,
@@ -2965,6 +2973,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowSubModal(true),
+              "aria-label": t("injurySubsTitle"),
+              title: t("injurySubsTitle"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
