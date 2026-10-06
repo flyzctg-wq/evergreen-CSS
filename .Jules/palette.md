@@ -1,0 +1,3 @@
+## 2025-05-18 - Icon-Only Button Accessibility in Single-File HTML/React Apps
+**Learning:** Icon-only buttons (such as print 🖨️, undo ↩, edit ✏️, viewer link 📡, and injury substitution 🤕) lack accessible names for screen reader users and visual hover context unless explicitly given `aria-label` and `title` attributes. When using localized UI dictionaries (`t("key")`), passing localized string evaluations directly to both `aria-label` and `title` ensures multi-language accessibility without cluttering the compact UI toolbar layout.
+**Action:** Always audit icon-only control buttons across React UMD components and ensure `aria-label` and `title` are provided using localized dictionary getters when available.
