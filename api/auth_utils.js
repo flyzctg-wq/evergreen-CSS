@@ -54,22 +54,14 @@ function verifyPassword(password, stored) {
 }
 
 /**
- * Base64url encoding helpers
+ * Base64url encoding helpers - Optimized using Node's native 'base64url' encoding
  */
 function base64UrlEncode(obj) {
-  return Buffer.from(JSON.stringify(obj))
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+  return Buffer.from(JSON.stringify(obj)).toString("base64url");
 }
 
 function base64UrlDecode(str) {
-  let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-  while (base64.length % 4) {
-    base64 += "=";
-  }
-  return JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
+  return JSON.parse(Buffer.from(str, "base64url").toString("utf8"));
 }
 
 /**
@@ -86,10 +78,7 @@ function signJWT(payload, secret, expiresInSeconds) {
   const signature = crypto
     .createHmac("sha256", secret)
     .update(`${encodedHeader}.${encodedPayload}`)
-    .digest("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .digest("base64url");
     
   return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
@@ -107,10 +96,7 @@ function verifyJWT(token, secret) {
     const expectedSignature = crypto
       .createHmac("sha256", secret)
       .update(`${headerStr}.${payloadStr}`)
-      .digest("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+      .digest("base64url");
       
     if (signatureStr !== expectedSignature) return null;
     
@@ -140,21 +126,33 @@ function getKV() {
 }
 
 /**
- * Local file-based user loading
+ * File DB cache variables to avoid synchronous re-reading and JSON re-parsing on every request.
+ */
+let fileUsersCache = null;
+let fileUsersMtime = 0;
+
+/**
+ * Local file-based user loading with file modification timestamp checking.
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      const stat = fs.statSync(LOCAL_DB_PATH);
+      if (fileUsersCache && stat.mtimeMs === fileUsersMtime) {
+        return fileUsersCache;
+      }
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
-      return map;
+      fileUsersCache = map;
+      fileUsersMtime = stat.mtimeMs;
+      return fileUsersCache;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  return fileUsersCache || new Map();
 }
 
 /**
@@ -169,6 +167,9 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    const stat = fs.statSync(LOCAL_DB_PATH);
+    fileUsersCache = map;
+    fileUsersMtime = stat.mtimeMs;
   } catch (e) {
     console.error("Failed to write users to file", e);
   }

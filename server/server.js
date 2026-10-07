@@ -19,15 +19,30 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 
 // ── Cookie Parser Helper ──────────────────────────────────────────────────────
+// Fast, targeted cookie scanner to avoid string splits and object allocations
 function getCookie(req, name) {
-  const rc = req.headers.cookie;
-  if (!rc) return null;
-  const list = {};
-  rc.split(";").forEach(cookie => {
-    const parts = cookie.split("=");
-    list[parts.shift().trim()] = decodeURIComponent(parts.join("="));
-  });
-  return list[name] || null;
+  const header = req.headers.cookie;
+  if (!header) return null;
+  const target = name + "=";
+  let start = 0;
+  while (start < header.length) {
+    while (start < header.length && header.charCodeAt(start) <= 32) start++;
+    if (header.startsWith(target, start)) {
+      const valueStart = start + target.length;
+      let end = header.indexOf(";", valueStart);
+      if (end === -1) end = header.length;
+      const rawVal = header.slice(valueStart, end);
+      try {
+        return decodeURIComponent(rawVal);
+      } catch {
+        return rawVal;
+      }
+    }
+    const nextSemi = header.indexOf(";", start);
+    if (nextSemi === -1) break;
+    start = nextSemi + 1;
+  }
+  return null;
 }
 
 // Helper to set cookies with standard parameters
