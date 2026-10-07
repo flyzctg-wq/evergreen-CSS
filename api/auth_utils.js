@@ -9,10 +9,20 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-// Secrets
-const JWT_SECRET = process.env.JWT_SECRET || "evergreen-access-secret-key-109283-a7";
-const REFRESH_SECRET = process.env.REFRESH_SECRET || "evergreen-refresh-secret-key-483748-b2";
-const RESET_SECRET = process.env.RESET_SECRET || "evergreen-reset-secret-key-928374-c3";
+// Secrets: require environment variables in production, or generate random ephemeral fallbacks
+function getSecret(envKey) {
+  if (process.env[envKey]) {
+    return process.env[envKey];
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(`CRITICAL SECURITY ERROR: ${envKey} environment variable is required in production.`);
+  }
+  return crypto.randomBytes(32).toString("hex");
+}
+
+const JWT_SECRET = getSecret("JWT_SECRET");
+const REFRESH_SECRET = getSecret("REFRESH_SECRET");
+const RESET_SECRET = getSecret("RESET_SECRET");
 
 // Local file DB path for user storage fallback (used when Vercel KV is offline)
 const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
