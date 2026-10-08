@@ -1,10 +1,9 @@
 [
   {
     "email": "test@example.com",
-    "name": "Test Scorer",
-    "passwordHash": "8f7fbb9f7cf1514aab57fa1c2fe6e65d:20b0c8b312adb711d3e62b10d448fdcb16392a22d9d06a3d414228a071e8d782710dab5c44f30dd5a6975cb65fd21ed325ee41d8ff5763e77411b8d4f0fb4f59",
-    "role": "standard",
-    "createdAt": 1782732734934
+    "name": "Test User",
+    "passwordHash": "865ea2d7274bc8d85434359a0a95ef94:821863ae47efec9d67d41be6f7cb6f23d796a23e819cdca9ab0618a19dd05bd7767d709c9016bc0dfddcf114939d5b9aadf9d260df3ba53e25e0e70a8fc1f528",
+    "role": "standard"
   },
   {
     "email": "test2@example.com",
