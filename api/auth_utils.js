@@ -139,26 +139,40 @@ function getKV() {
   }
 }
 
+// Performance optimization: Cache loaded file users and mtime in memory to avoid
+// redundant synchronous disk read (`fs.readFileSync`) and JSON parsing (`JSON.parse`)
+// on every user lookup request.
+let cachedFileUsers = null;
+let cachedFileMtime = 0;
+
 /**
- * Local file-based user loading
+ * Local file-based user loading with mtime-based in-memory caching.
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      const stats = fs.statSync(LOCAL_DB_PATH);
+      if (cachedFileUsers && stats.mtimeMs === cachedFileMtime) {
+        return cachedFileUsers;
+      }
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
-      return map;
+      cachedFileUsers = map;
+      cachedFileMtime = stats.mtimeMs;
+      return cachedFileUsers;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  cachedFileUsers = new Map();
+  cachedFileMtime = 0;
+  return cachedFileUsers;
 }
 
 /**
- * Local file-based user saving
+ * Local file-based user saving with cache update.
  */
 function saveUsersToFile(map) {
   try {
@@ -169,6 +183,9 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    const stats = fs.statSync(LOCAL_DB_PATH);
+    cachedFileUsers = map;
+    cachedFileMtime = stats.mtimeMs;
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
