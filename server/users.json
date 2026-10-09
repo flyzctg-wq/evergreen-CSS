@@ -19,5 +19,11 @@
     "passwordHash": "f8a08bbf979ff1876fb139502dd73996:812b538b81494176bdcd822fd9b1fbae550b14826ccc942ac360e00768ec9d47526d0ed2ac0d41491183cf2bb8275cb6a063b34da22e3581000a109ec7d4fe3c",
     "role": "standard",
     "createdAt": 1783321980881
+  },
+  {
+    "email": "test_sentinel@example.com",
+    "name": "Sentinel User",
+    "passwordHash": "a5111c9bada6fe9b2d524732b5237546:804fcbe6b45667754f8c557e50744593767f0785c45e7b961239a18933acc060bc23f8ded0aa015abd4b9a6071da9b2ef898e5c18274cfeaa9e958a21938b3b2",
+    "role": "standard"
   }
 ]
