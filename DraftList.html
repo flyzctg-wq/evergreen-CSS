@@ -669,7 +669,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       );
     }
 
-    function Btn({ onClick, kind, children, style, className, disabled, type }) {
+    function Btn({ onClick, kind, children, style, className, disabled, type, "aria-label": ariaLabel, title }) {
       const [hovered, setHovered] = useState(false);
       let bg = COLORS.panelAlt;
       let hoverBg = COLORS.line;
@@ -704,6 +704,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           disabled: disabled,
           onClick: onClick,
           className: `btn-base ${className || ""}`,
+          "aria-label": ariaLabel,
+          title: title,
           style: {
             background: disabled ? "rgba(255,255,255,0.03)" : hovered ? hoverBg : bg,
             borderColor: disabled ? "rgba(255,255,255,0.05)" : border,
@@ -880,7 +882,12 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           React.createElement("div", { className: "no-print", style: { display: "flex", gap: 10 } },
             React.createElement(Btn, { onClick: () => window.location.href = "EvergreenClub.html", kind: "ghost" }, t("backToScorer")),
             React.createElement(Btn, { onClick: () => window.print(), kind: "ghost" }, t("printPdf")),
-            React.createElement(Btn, { onClick: () => { const next = lang === "en" ? "bn" : "en"; setLang(next); localStorage.setItem("evergreenLang", next); }, kind: "primary" }, lang === "en" ? "বাংলা" : "English")
+            React.createElement(Btn, {
+              onClick: () => { const next = lang === "en" ? "bn" : "en"; setLang(next); localStorage.setItem("evergreenLang", next); },
+              kind: "primary",
+              "aria-label": lang === "en" ? "Switch language to Bangla" : "Switch language to English",
+              title: lang === "en" ? "Switch language to Bangla" : "Switch language to English"
+            }, lang === "en" ? "বাংলা" : "English")
           )
         ),
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 } },
@@ -898,9 +905,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         ),
         React.createElement(Panel, { className: "no-print", style: { marginBottom: 24 } },
           React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" } },
-            React.createElement("input", { type: "text", placeholder: t("searchPlaceholder"), value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8, width: 200 } }),
-            React.createElement("form", { onSubmit: handleAddPlayer }, React.createElement("input", { type: "text", placeholder: t("addPlayerPlaceholder"), value: newPlayerName, onChange: (e) => setNewPlayerName(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8 } })),
-            React.createElement("select", { value: sortBy, onChange: (e) => setSortBy(e.target.value), style: { background: COLORS.bg, color: COLORS.cream, padding: 8, borderRadius: 8 } },
+            React.createElement("input", { type: "text", placeholder: t("searchPlaceholder"), "aria-label": t("searchPlaceholder"), value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8, width: 200 } }),
+            React.createElement("form", { onSubmit: handleAddPlayer }, React.createElement("input", { type: "text", placeholder: t("addPlayerPlaceholder"), "aria-label": t("addPlayerPlaceholder"), value: newPlayerName, onChange: (e) => setNewPlayerName(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8 } })),
+            React.createElement("select", { value: sortBy, onChange: (e) => setSortBy(e.target.value), "aria-label": "Sort players", style: { background: COLORS.bg, color: COLORS.cream, padding: 8, borderRadius: 8 } },
               React.createElement("option", { value: "original" }, t("sortOriginal")),
               React.createElement("option", { value: "name-asc" }, t("sortNameAsc")),
               React.createElement("option", { value: "name-desc" }, t("sortNameDesc")),
