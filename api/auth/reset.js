@@ -39,8 +39,7 @@ module.exports = async function handler(req, res) {
 
       return res.json({
         success: true,
-        message: "Password recovery link generated successfully.",
-        debugResetUrl: resetUrl // Returned for verification
+        message: "Password recovery link generated successfully."
       });
     }
 
