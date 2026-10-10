@@ -453,6 +453,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       startSecondInningsBtn: "Start 2nd innings →",
       fallOfWicketsLabel: "Fall of wickets",
       matchCompleteTitle: "Match Complete",
+      undoBallLabel: "Undo last ball",
+      closeModalLabel: "Close modal",
       printScorecardBtn: "🖨️ Print scorecard",
       startNewMatchBtn: "Start a new match",
       viewerLinkTitle: "Live viewer link",
@@ -588,6 +590,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       startSecondInningsBtn: "২য় ইনিংস শুরু করুন →",
       fallOfWicketsLabel: "উইকেট পতন",
       matchCompleteTitle: "ম্যাচ সম্পন্ন",
+      undoBallLabel: "সর্বশেষ বল পূর্বাবস্থায় ফিরিয়ে আনুন",
+      closeModalLabel: "বন্ধ করুন",
       printScorecardBtn: "🖨️ স্কোরকার্ড প্রিন্ট করুন",
       startNewMatchBtn: "নতুন ম্যাচ শুরু করুন",
       viewerLinkTitle: "লাইভ ভিউয়ার লিংক",
@@ -2109,7 +2113,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       React.createElement("div", { style: { background:COLORS.panel, border:`1px solid ${COLORS.gold}`, borderRadius:16, padding:24, width:"min(96vw,700px)", marginBottom:40 } },
         React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 } },
           React.createElement("div", { style: { fontFamily:fontDisplay, fontSize:22, color:COLORS.gold } }, t("manualCorrectionTitle")),
-          React.createElement("button", { onClick:onClose, style:{ background:"none", border:"none", color:COLORS.textMuted, fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "×")
+          React.createElement("button", { onClick:onClose, "aria-label": t("closeModalLabel"), title: t("closeModalLabel"), style:{ background:"none", border:"none", color:COLORS.textMuted, fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "×")
         ),
         React.createElement("div", { style: { fontFamily:fontBody, fontSize:12, color:"#ff9d86", marginBottom:18, padding:"8px 12px", background:"rgba(193,67,42,0.12)", borderRadius:8, border:`1px solid ${COLORS.red}` } },
           t("manualCorrectionWarning")
@@ -2895,6 +2899,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => window.print(),
+              "aria-label": t("printScorecardBtn"),
+              title: t("printScorecardBtn"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2913,6 +2919,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             {
               disabled: undoStack.length === 0,
               onClick: undoBall,
+              "aria-label": t("undoBallLabel"),
+              title: t("undoBallLabel"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2931,6 +2939,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowEditScore(true),
+              "aria-label": t("manualCorrectionTitle"),
+              title: t("manualCorrectionTitle"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2948,6 +2958,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowViewerPanel(v => !v),
+              "aria-label": t("viewerLinkTitle"),
+              title: t("viewerLinkTitle"),
               style: {
                 background: showViewerPanel ? "rgba(92,138,90,0.15)" : "none",
                 border: `1px solid ${showViewerPanel ? COLORS.green : COLORS.line}`,
@@ -2965,6 +2977,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowSubModal(true),
+              "aria-label": t("injurySubsTitle"),
+              title: t("injurySubsTitle"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -3155,6 +3169,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
                 setSelectedSubstitute("");
                 setIsRefereeApproved(false);
               },
+              "aria-label": t("closeModalLabel"),
+              title: t("closeModalLabel"),
               style: { background: "none", border: "none", color: COLORS.textMuted, fontSize: 22, cursor: "pointer", lineHeight: 1 }
             }, "×")
           ),
