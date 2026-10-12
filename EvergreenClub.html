@@ -3505,6 +3505,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           React.createElement(
             "button",
             {
+              "aria-label": lang === "en" ? "Switch language to Bengali" : "English-এ পরিবর্তন করুন",
               onClick: () => {
                 const next = lang === "en" ? "bn" : "en";
                 setLang(next);
