@@ -28,29 +28,48 @@ function validatePassword(password) {
   if (!password || typeof password !== "string") {
     return "Password must be a string.";
   }
-  if (!/^\d{6}$/.test(password)) {
-    return "Password must be exactly 6 digits.";
+  if (password.length < 8) {
+    return "Password must be at least 8 characters long.";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter.";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Password must contain at least one lowercase letter.";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Password must contain at least one number.";
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return "Password must contain at least one special character.";
   }
   return null;
 }
 
+// PBKDF2 iteration count (100,000 iterations for secure key derivation)
+const PBKDF2_ITERATIONS = 100000;
+
 /**
- * Hashes password using native PBKDF2 with a secure salt.
+ * Hashes password using native PBKDF2 with a secure salt and 100,000 iterations.
  */
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
+  const hash = crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, 64, "sha512").toString("hex");
   return `${salt}:${hash}`;
 }
 
 /**
- * Verifies password matching.
+ * Verifies password matching. Supports both current 100,000 iterations and legacy 1,000 iterations.
  */
 function verifyPassword(password, stored) {
   if (!stored || !stored.includes(":")) return false;
   const [salt, hash] = stored.split(":");
-  const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
-  return hash === checkHash;
+  const checkHashNew = crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, 64, "sha512").toString("hex");
+  if (hash === checkHashNew) return true;
+
+  // Fallback for legacy password hashes created with 1,000 iterations
+  const checkHashLegacy = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
+  return hash === checkHashLegacy;
 }
 
 /**
