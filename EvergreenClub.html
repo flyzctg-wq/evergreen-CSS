@@ -453,7 +453,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       startSecondInningsBtn: "Start 2nd innings →",
       fallOfWicketsLabel: "Fall of wickets",
       matchCompleteTitle: "Match Complete",
-      printScorecardBtn: "🖨️ Print scorecard",
+      printScorecardBtn: "Print scorecard",
+      undoBtn: "Undo last ball",
+      editScoreBtn: "Manual score correction",
+      toggleViewerBtn: "Live viewer options",
+      substitutionsBtn: "Injury substitutions",
       startNewMatchBtn: "Start a new match",
       viewerLinkTitle: "Live viewer link",
       shareUrlDesc: "Share this URL with viewers on the same network:",
@@ -588,7 +592,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       startSecondInningsBtn: "২য় ইনিংস শুরু করুন →",
       fallOfWicketsLabel: "উইকেট পতন",
       matchCompleteTitle: "ম্যাচ সম্পন্ন",
-      printScorecardBtn: "🖨️ স্কোরকার্ড প্রিন্ট করুন",
+      printScorecardBtn: "স্কোরকার্ড প্রিন্ট করুন",
+      undoBtn: "শেষ বলটি বাতিল করুন (Undo)",
+      editScoreBtn: "ম্যানুয়াল স্কোর সংশোধন",
+      toggleViewerBtn: "লাইভ ভিউয়ার অপশন",
+      substitutionsBtn: "ইনজুরি সাবস্টিটিউট",
       startNewMatchBtn: "নতুন ম্যাচ শুরু করুন",
       viewerLinkTitle: "লাইভ ভিউয়ার লিংক",
       shareUrlDesc: "একই নেটওয়ার্কে থাকা দর্শকদের সাথে এই লিংকটি শেয়ার করুন:",
@@ -2895,6 +2903,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => window.print(),
+              "aria-label": t("printScorecardBtn"),
+              title: t("printScorecardBtn"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2913,6 +2923,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             {
               disabled: undoStack.length === 0,
               onClick: undoBall,
+              "aria-label": t("undoBtn"),
+              title: t("undoBtn"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2931,6 +2943,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowEditScore(true),
+              "aria-label": t("editScoreBtn"),
+              title: t("editScoreBtn"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
@@ -2948,6 +2962,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowViewerPanel(v => !v),
+              "aria-label": t("toggleViewerBtn"),
+              title: t("toggleViewerBtn"),
               style: {
                 background: showViewerPanel ? "rgba(92,138,90,0.15)" : "none",
                 border: `1px solid ${showViewerPanel ? COLORS.green : COLORS.line}`,
@@ -2965,6 +2981,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             "button",
             {
               onClick: () => setShowSubModal(true),
+              "aria-label": t("substitutionsBtn"),
+              title: t("substitutionsBtn"),
               style: {
                 background: "none",
                 border: `1px solid ${COLORS.line}`,
