@@ -9,10 +9,10 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
-// Secrets
-const JWT_SECRET = process.env.JWT_SECRET || "evergreen-access-secret-key-109283-a7";
-const REFRESH_SECRET = process.env.REFRESH_SECRET || "evergreen-refresh-secret-key-483748-b2";
-const RESET_SECRET = process.env.RESET_SECRET || "evergreen-reset-secret-key-928374-c3";
+// Secrets: Use environment variables or generate cryptographically secure random fallbacks per startup
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+const REFRESH_SECRET = process.env.REFRESH_SECRET || crypto.randomBytes(32).toString("hex");
+const RESET_SECRET = process.env.RESET_SECRET || crypto.randomBytes(32).toString("hex");
 
 // Local file DB path for user storage fallback (used when Vercel KV is offline)
 const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
