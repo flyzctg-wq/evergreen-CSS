@@ -20,6 +20,12 @@ const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
 // In-memory fallback if file system is read-only
 let memoryUsers = new Map();
 
+// In-memory cache for user file data and its last modification timestamp (mtimeMs).
+// Performance Optimization: Caching avoids redundant synchronous disk reads (fs.readFileSync)
+// and JSON parsing (JSON.parse) on every authentication / user lookup request.
+let fileUsersCache = null;
+let fileUsersMtime = 0;
+
 /**
  * Validates password strength:
  * Minimum 8 characters, at least one uppercase, one lowercase, one number, and one special character.
@@ -140,25 +146,32 @@ function getKV() {
 }
 
 /**
- * Local file-based user loading
+ * Local file-based user loading with mtime caching.
+ * Prevents unnecessary synchronous disk reads and JSON parsing on hot request paths.
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      const stat = fs.statSync(LOCAL_DB_PATH);
+      if (fileUsersCache && stat.mtimeMs === fileUsersMtime) {
+        return fileUsersCache;
+      }
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
+      fileUsersCache = map;
+      fileUsersMtime = stat.mtimeMs;
       return map;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  return fileUsersCache || new Map();
 }
 
 /**
- * Local file-based user saving
+ * Local file-based user saving with cache synchronization.
  */
 function saveUsersToFile(map) {
   try {
@@ -169,6 +182,13 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    // Update memory cache and mtime timestamp
+    fileUsersCache = map;
+    try {
+      fileUsersMtime = fs.statSync(LOCAL_DB_PATH).mtimeMs;
+    } catch {
+      fileUsersMtime = 0;
+    }
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
