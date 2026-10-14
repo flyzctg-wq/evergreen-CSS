@@ -257,6 +257,12 @@ html, body {
   color: #ff9d86;
 }
 
+/* ── Buttons ── */
+#lang-toggle-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 /* ── Misc ── */
 .read-only-badge {
   font-family: 'Inter', sans-serif;
@@ -285,7 +291,7 @@ html, body {
       </div>
     </div>
     <!-- Language toggle button -->
-    <button id="lang-toggle-btn" style="background:var(--panelAlt);border:1px solid var(--line);color:var(--cream);cursor:pointer;font-family:inherit;font-size:11px;padding:6px 12px;border-radius:20px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;transition:all 0.2s">বাংলা</button>
+    <button id="lang-toggle-btn" aria-label="Switch language to Bangla" title="Switch language to Bangla" style="background:var(--panelAlt);border:1px solid var(--line);color:var(--cream);cursor:pointer;font-family:inherit;font-size:11px;padding:6px 12px;border-radius:20px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;transition:all 0.2s">বাংলা</button>
   </div>
 
   <!-- Status bar -->
@@ -375,6 +381,8 @@ html, body {
   const TRANSLATIONS = {
     en: {
       appTitle: "Evergreen Team",
+      toggleLangBtnText: "বাংলা",
+      toggleLangLabel: "Switch language to Bangla",
       liveViewer: "Live Viewer",
       liveDashboard: "Live Scoring Dashboard",
       connecting: "Connecting…",
@@ -437,6 +445,8 @@ html, body {
     },
     bn: {
       appTitle: "এভারগ্রিন টিম",
+      toggleLangBtnText: "English",
+      toggleLangLabel: "Switch language to English",
       liveViewer: "লাইভ ভিউয়ার",
       liveDashboard: "লাইভ স্কোর ড্যাশবোর্ড",
       connecting: "সংযোগ করা হচ্ছে…",
@@ -512,7 +522,9 @@ html, body {
   function translatePage() {
     const $toggle = document.getElementById("lang-toggle-btn");
     if ($toggle) {
-      $toggle.textContent = currentLang === "en" ? "বাংলা" : "English";
+      $toggle.textContent = t("toggleLangBtnText");
+      $toggle.setAttribute("aria-label", t("toggleLangLabel"));
+      $toggle.setAttribute("title", t("toggleLangLabel"));
     }
     
     // Update headers and labels
