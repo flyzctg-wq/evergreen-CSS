@@ -2109,7 +2109,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       React.createElement("div", { style: { background:COLORS.panel, border:`1px solid ${COLORS.gold}`, borderRadius:16, padding:24, width:"min(96vw,700px)", marginBottom:40 } },
         React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 } },
           React.createElement("div", { style: { fontFamily:fontDisplay, fontSize:22, color:COLORS.gold } }, t("manualCorrectionTitle")),
-          React.createElement("button", { onClick:onClose, style:{ background:"none", border:"none", color:COLORS.textMuted, fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "×")
+          React.createElement("button", { onClick:onClose, "aria-label":"Close", style:{ background:"none", border:"none", color:COLORS.textMuted, fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "×")
         ),
         React.createElement("div", { style: { fontFamily:fontBody, fontSize:12, color:"#ff9d86", marginBottom:18, padding:"8px 12px", background:"rgba(193,67,42,0.12)", borderRadius:8, border:`1px solid ${COLORS.red}` } },
           t("manualCorrectionWarning")
@@ -3155,6 +3155,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
                 setSelectedSubstitute("");
                 setIsRefereeApproved(false);
               },
+              "aria-label": "Close",
               style: { background: "none", border: "none", color: COLORS.textMuted, fontSize: 22, cursor: "pointer", lineHeight: 1 }
             }, "×")
           ),
