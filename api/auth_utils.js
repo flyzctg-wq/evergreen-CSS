@@ -44,13 +44,26 @@ function hashPassword(password) {
 }
 
 /**
- * Verifies password matching.
+ * Helper to perform timing-safe string comparison preventing side-channel timing attacks.
+ */
+function safeCompare(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+/**
+ * Verifies password matching using timing-safe comparison to prevent timing attacks.
  */
 function verifyPassword(password, stored) {
-  if (!stored || !stored.includes(":")) return false;
+  if (!stored || typeof stored !== "string" || !stored.includes(":")) return false;
   const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
   const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
-  return hash === checkHash;
+  // Security optimization: constant-time comparison prevents timing attack vulnerabilities
+  return safeCompare(hash, checkHash);
 }
 
 /**
@@ -112,7 +125,8 @@ function verifyJWT(token, secret) {
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
       
-    if (signatureStr !== expectedSignature) return null;
+    // Security optimization: timing-safe comparison prevents JWT signature forgery via side-channel analysis
+    if (!safeCompare(signatureStr, expectedSignature)) return null;
     
     const payload = base64UrlDecode(payloadStr);
     if (payload.exp && Date.now() / 1000 > payload.exp) return null; // Expired
