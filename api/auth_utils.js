@@ -20,6 +20,12 @@ const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
 // In-memory fallback if file system is read-only
 let memoryUsers = new Map();
 
+// In-memory cache for local file user storage to eliminate synchronous file I/O & JSON parsing on repeated calls.
+let cachedFileUsers = null;
+let cachedFileMtime = 0;
+// In-memory cache for Vercel KV client instance
+let cachedKV = undefined;
+
 /**
  * Validates password strength:
  * Minimum 8 characters, at least one uppercase, one lowercase, one number, and one special character.
@@ -132,33 +138,48 @@ function getKV() {
   }
 
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
+  if (cachedKV !== undefined) return cachedKV;
   try {
-    return require("@vercel/kv").kv;
+    cachedKV = require("@vercel/kv").kv;
+    return cachedKV;
   } catch {
+    cachedKV = null;
     return null;
   }
 }
 
 /**
- * Local file-based user loading
+ * Local file-based user loading.
+ * Performance Optimization: Uses file modification timestamp (`mtimeMs`) to cache
+ * the parsed user map in memory, avoiding synchronous disk reads (`readFileSync`)
+ * and JSON parsing on every `getUser` lookup.
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      const stats = fs.statSync(LOCAL_DB_PATH);
+      if (cachedFileUsers && stats.mtimeMs === cachedFileMtime) {
+        return cachedFileUsers;
+      }
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
+      cachedFileUsers = map;
+      cachedFileMtime = stats.mtimeMs;
       return map;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  cachedFileUsers = new Map();
+  cachedFileMtime = 0;
+  return cachedFileUsers;
 }
 
 /**
- * Local file-based user saving
+ * Local file-based user saving.
+ * Updates the disk file and refreshes the in-memory cache and mtime timestamp.
  */
 function saveUsersToFile(map) {
   try {
@@ -169,6 +190,9 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    const stats = fs.statSync(LOCAL_DB_PATH);
+    cachedFileUsers = map;
+    cachedFileMtime = stats.mtimeMs;
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
