@@ -17,8 +17,12 @@ const RESET_SECRET = process.env.RESET_SECRET || "evergreen-reset-secret-key-928
 // Local file DB path for user storage fallback (used when Vercel KV is offline)
 const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
 
-// In-memory fallback if file system is read-only
+// In-memory fallback for user storage
 let memoryUsers = new Map();
+
+// Local file user cache and timestamp for mtime verification
+let fileUsersCache = new Map();
+let lastFileMtimeMs = 0;
 
 /**
  * Validates password strength:
@@ -140,21 +144,30 @@ function getKV() {
 }
 
 /**
- * Local file-based user loading
+ * Local file-based user loading with mtime-based caching.
+ * Bolt Optimization: Caches parsed user objects and reuses them if users.json
+ * mtime has not changed, eliminating redundant fs.readFileSync and JSON.parse calls
+ * on every auth request while preserving Vercel KV as primary KV lookup source.
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      const stats = fs.statSync(LOCAL_DB_PATH);
+      if (stats.mtimeMs === lastFileMtimeMs && fileUsersCache.size > 0) {
+        return fileUsersCache;
+      }
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
-      return map;
+      fileUsersCache = map;
+      lastFileMtimeMs = stats.mtimeMs;
+      return fileUsersCache;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  return fileUsersCache;
 }
 
 /**
@@ -169,6 +182,9 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    fileUsersCache = map;
+    const stats = fs.statSync(LOCAL_DB_PATH);
+    lastFileMtimeMs = stats.mtimeMs;
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
@@ -181,7 +197,7 @@ async function getUser(email) {
   if (!email) return null;
   const key = email.toLowerCase().trim();
   
-  // 1. Try Vercel KV
+  // 1. Try Vercel KV first if available (preserves primary datastore accuracy)
   const kv = getKV();
   if (kv) {
     try {
@@ -192,13 +208,13 @@ async function getUser(email) {
     }
   }
   
-  // 2. Try file system
+  // 2. Try file system with mtime-cached loadUsersFromFile()
   const fileUsers = loadUsersFromFile();
   if (fileUsers.has(key)) {
     return fileUsers.get(key);
   }
   
-  // 3. Try memory map
+  // 3. Try memory map fallback
   return memoryUsers.get(key) || null;
 }
 
