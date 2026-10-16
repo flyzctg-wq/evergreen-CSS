@@ -112,7 +112,11 @@ function verifyJWT(token, secret) {
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
       
-    if (signatureStr !== expectedSignature) return null;
+    const sigBuf = Buffer.from(signatureStr);
+    const expectedBuf = Buffer.from(expectedSignature);
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return null;
+    }
     
     const payload = base64UrlDecode(payloadStr);
     if (payload.exp && Date.now() / 1000 > payload.exp) return null; // Expired
