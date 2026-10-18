@@ -19,5 +19,12 @@
     "passwordHash": "f8a08bbf979ff1876fb139502dd73996:812b538b81494176bdcd822fd9b1fbae550b14826ccc942ac360e00768ec9d47526d0ed2ac0d41491183cf2bb8275cb6a063b34da22e3581000a109ec7d4fe3c",
     "role": "standard",
     "createdAt": 1783321980881
+  },
+  {
+    "email": "testuser@example.com",
+    "name": "Test User",
+    "passwordHash": "2e2bd15ea10f511967ee780b111fa325:0e966499e65e493bcc9d3f79ab0c6603f555c3c99e857da27cf364a59abbed7cfcc81e9bfd7ff617e403805fbcef1a4dc2a7a1ded80f1ac5317aff08d1f569ff",
+    "role": "standard",
+    "createdAt": 1792360835529
   }
 ]
