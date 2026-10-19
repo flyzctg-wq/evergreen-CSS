@@ -20,6 +20,10 @@ const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
 // In-memory fallback if file system is read-only
 let memoryUsers = new Map();
 
+// In-memory cache for file-based user reads to prevent repeated synchronous disk reads and JSON parsing
+let fileUsersCache = new Map();
+let fileUsersCacheMtime = 0;
+
 /**
  * Validates password strength:
  * Minimum 8 characters, at least one uppercase, one lowercase, one number, and one special character.
@@ -140,25 +144,38 @@ function getKV() {
 }
 
 /**
- * Local file-based user loading
+ * Local file-based user loading with file stat/mtime caching.
+ * Compares file modification time (mtimeMs) to bypass reading and parsing JSON on unchanged files.
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      // Check file modification time to reuse cached Map if unchanged
+      const stats = fs.statSync(LOCAL_DB_PATH);
+      if (stats.mtimeMs === fileUsersCacheMtime && fileUsersCache.size > 0) {
+        return fileUsersCache;
+      }
+
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
+
+      fileUsersCache = map;
+      fileUsersCacheMtime = stats.mtimeMs;
       return map;
     }
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
-  return new Map();
+  // Reset cache if file no longer exists or read fails
+  fileUsersCache = new Map();
+  fileUsersCacheMtime = 0;
+  return fileUsersCache;
 }
 
 /**
- * Local file-based user saving
+ * Local file-based user saving with cache update
  */
 function saveUsersToFile(map) {
   try {
@@ -169,6 +186,11 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+
+    // Keep cache and mtime in sync after write
+    const stats = fs.statSync(LOCAL_DB_PATH);
+    fileUsersCache = map;
+    fileUsersCacheMtime = stats.mtimeMs;
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
