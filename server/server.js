@@ -202,8 +202,7 @@ app.post("/api/auth/reset", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Password recovery link generated successfully.",
-      debugResetUrl: resetUrl // Returned for offline testing/verification convenience
+      message: "Password recovery link generated successfully."
     });
   }
 
