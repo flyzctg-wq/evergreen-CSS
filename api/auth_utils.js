@@ -54,26 +54,20 @@ function verifyPassword(password, stored) {
 }
 
 /**
- * Base64url encoding helpers
+ * Base64url encoding helpers.
+ * Optimization: Uses native Node.js 'base64url' encoding instead of regex replaces to avoid extra string allocations.
  */
 function base64UrlEncode(obj) {
-  return Buffer.from(JSON.stringify(obj))
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+  return Buffer.from(JSON.stringify(obj)).toString("base64url");
 }
 
 function base64UrlDecode(str) {
-  let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-  while (base64.length % 4) {
-    base64 += "=";
-  }
-  return JSON.parse(Buffer.from(base64, "base64").toString("utf8"));
+  return JSON.parse(Buffer.from(str, "base64url").toString("utf8"));
 }
 
 /**
  * Signs a JWT with HMAC-SHA256.
+ * Optimization: Uses native 'base64url' HMAC digest to eliminate regex post-processing.
  */
 function signJWT(payload, secret, expiresInSeconds) {
   const header = { alg: "HS256", typ: "JWT" };
@@ -86,16 +80,14 @@ function signJWT(payload, secret, expiresInSeconds) {
   const signature = crypto
     .createHmac("sha256", secret)
     .update(`${encodedHeader}.${encodedPayload}`)
-    .digest("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .digest("base64url");
     
   return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
 
 /**
  * Verifies a JWT.
+ * Optimization: Uses native 'base64url' HMAC digest and buffer parsing for zero-regex signature verification.
  */
 function verifyJWT(token, secret) {
   if (!token || typeof token !== "string") return null;
@@ -107,10 +99,7 @@ function verifyJWT(token, secret) {
     const expectedSignature = crypto
       .createHmac("sha256", secret)
       .update(`${headerStr}.${payloadStr}`)
-      .digest("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+      .digest("base64url");
       
     if (signatureStr !== expectedSignature) return null;
     
@@ -140,25 +129,37 @@ function getKV() {
 }
 
 /**
- * Local file-based user loading
+ * Local file-based user loading with mtime caching.
+ * Optimization: Caches the loaded user Map and verifies file modification timestamp (mtimeMs)
+ * via fast fs.statSync to avoid repeated synchronous disk I/O and JSON parsing on every request.
  */
+let cachedFileUsers = null;
+let lastFileMtime = -1;
+
 function loadUsersFromFile() {
   try {
-    if (fs.existsSync(LOCAL_DB_PATH)) {
-      const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
-      const list = JSON.parse(data);
-      const map = new Map();
-      list.forEach(u => map.set(u.email.toLowerCase(), u));
-      return map;
+    const stat = fs.statSync(LOCAL_DB_PATH);
+    if (cachedFileUsers && stat.mtimeMs === lastFileMtime) {
+      return cachedFileUsers;
     }
+    const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
+    const list = JSON.parse(data);
+    const map = new Map();
+    list.forEach(u => map.set(u.email.toLowerCase(), u));
+    cachedFileUsers = map;
+    lastFileMtime = stat.mtimeMs;
+    return map;
   } catch (e) {
-    console.error("Failed to load users from file", e);
+    if (e.code !== "ENOENT") {
+      console.error("Failed to load users from file", e);
+    }
   }
-  return new Map();
+  return cachedFileUsers || new Map();
 }
 
 /**
- * Local file-based user saving
+ * Local file-based user saving with cache update.
+ * Optimization: Directly updates cached user Map and mtimeMs after writing file.
  */
 function saveUsersToFile(map) {
   try {
@@ -169,6 +170,13 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    cachedFileUsers = map;
+    try {
+      const stat = fs.statSync(LOCAL_DB_PATH);
+      lastFileMtime = stat.mtimeMs;
+    } catch {
+      lastFileMtime = -1;
+    }
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
