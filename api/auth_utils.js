@@ -122,8 +122,13 @@ function verifyJWT(token, secret) {
   }
 }
 
-// Helper to check if Vercel KV is available
+// Memoized Vercel KV instance to prevent repeated module resolution/require errors
+let cachedKV = undefined;
+
+// Helper to check if Vercel KV is available (memoized for performance)
 function getKV() {
+  if (cachedKV !== undefined) return cachedKV;
+
   if (process.env.UPSTASH_REDIS_REST_URL && !process.env.KV_REST_API_URL) {
     process.env.KV_REST_API_URL = process.env.UPSTASH_REDIS_REST_URL;
   }
@@ -131,24 +136,38 @@ function getKV() {
     process.env.KV_REST_API_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
   }
 
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
-  try {
-    return require("@vercel/kv").kv;
-  } catch {
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+    cachedKV = null;
     return null;
   }
+  try {
+    cachedKV = require("@vercel/kv").kv;
+  } catch {
+    cachedKV = null;
+  }
+  return cachedKV;
 }
 
+// In-memory cache for local file user DB to avoid redundant synchronous disk I/O
+let fileUsersCache = null;
+let fileUsersMtime = 0;
+
 /**
- * Local file-based user loading
+ * Local file-based user loading with mtime caching
  */
 function loadUsersFromFile() {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
+      const stat = fs.statSync(LOCAL_DB_PATH);
+      if (fileUsersCache && stat.mtimeMs === fileUsersMtime) {
+        return fileUsersCache;
+      }
       const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
       const list = JSON.parse(data);
       const map = new Map();
       list.forEach(u => map.set(u.email.toLowerCase(), u));
+      fileUsersCache = map;
+      fileUsersMtime = stat.mtimeMs;
       return map;
     }
   } catch (e) {
@@ -169,6 +188,10 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    fileUsersCache = map;
+    if (fs.existsSync(LOCAL_DB_PATH)) {
+      fileUsersMtime = fs.statSync(LOCAL_DB_PATH).mtimeMs;
+    }
   } catch (e) {
     console.error("Failed to write users to file", e);
   }

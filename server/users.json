@@ -19,5 +19,12 @@
     "passwordHash": "f8a08bbf979ff1876fb139502dd73996:812b538b81494176bdcd822fd9b1fbae550b14826ccc942ac360e00768ec9d47526d0ed2ac0d41491183cf2bb8275cb6a063b34da22e3581000a109ec7d4fe3c",
     "role": "standard",
     "createdAt": 1783321980881
+  },
+  {
+    "email": "bolt@evergreen.test",
+    "name": "Bolt Agent",
+    "passwordHash": "24a94f82573d3b58d5a2e15a9a123019:bfa2d4b7ffb20e77d99275e08cf51de75442df286dddaa760741a9bae3bcf133b3b4471b4885f643a938e0f57cdb8b45b997b28361ebde091e5010fca3f50d1b",
+    "role": "standard",
+    "createdAt": 1792705400099
   }
 ]
