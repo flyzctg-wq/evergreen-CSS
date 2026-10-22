@@ -18,14 +18,22 @@
 const memStore = new Map();
 const MATCH_TTL_SECONDS = 24 * 60 * 60; // 24 h
 
-// ── KV helper (lazy) ──────────────────────────────────────────────────────────
+// ── KV helper (lazy + memoized to avoid repeated require errors during polling) ──
+let cachedKV = undefined;
+
 function getKV() {
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
-  try {
-    return require("@vercel/kv").kv;
-  } catch {
+  if (cachedKV !== undefined) return cachedKV;
+
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+    cachedKV = null;
     return null;
   }
+  try {
+    cachedKV = require("@vercel/kv").kv;
+  } catch {
+    cachedKV = null;
+  }
+  return cachedKV;
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
