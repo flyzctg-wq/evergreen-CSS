@@ -44,13 +44,18 @@ function hashPassword(password) {
 }
 
 /**
- * Verifies password matching.
+ * Verifies password matching using timingSafeEqual to prevent timing attacks.
  */
 function verifyPassword(password, stored) {
-  if (!stored || !stored.includes(":")) return false;
+  if (!stored || typeof stored !== "string" || !stored.includes(":")) return false;
   const [salt, hash] = stored.split(":");
-  const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
-  return hash === checkHash;
+  if (!salt || !hash) return false;
+
+  const checkHashBuf = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512");
+  const hashBuf = Buffer.from(hash, "hex");
+
+  if (hashBuf.length !== checkHashBuf.length) return false;
+  return crypto.timingSafeEqual(hashBuf, checkHashBuf);
 }
 
 /**
