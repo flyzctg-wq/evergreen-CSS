@@ -519,7 +519,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         assignTeam: "Assign ({count}) to Team {team}",
         searchPlaceholder: "🔍 Search players or notes...",
         addPlayerPlaceholder: "Add new player...",
-        sortLabel: "Sort:",
+        sortLabel: "Sort players",
         sortOriginal: "Original List Order",
         sortNameAsc: "Player Name (A-Z)",
         sortNameDesc: "Player Name (Z-A)",
@@ -552,7 +552,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         notesPlaceholder: "Add remarks, position, availability...",
         selectPlayerAlert: "Please select at least one player to assign.",
         failedWriteStorage: "Failed to write to storage.",
-        failedCopy: "Could not copy automatically. Please try again."
+        failedCopy: "Could not copy automatically. Please try again.",
+        selectPlayer: "Select {name}",
+        deletePlayer: "Delete {name}"
       },
       bn: {
         appTitle: "এভারগ্রিন টিম",
@@ -568,7 +570,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         assignTeam: "টিম {team}-এ অ্যাসাইন করুন ({count})",
         searchPlaceholder: "🔍 খেলোয়াড় বা নোট খুঁজুন...",
         addPlayerPlaceholder: "নতুন খেলোয়াড় যোগ করুন...",
-        sortLabel: "বাছাই করুন:",
+        sortLabel: "খেলোয়াড় ক্রমানুসারে সাজান",
         sortOriginal: "মূল তালিকা ক্রমানুসারে",
         sortNameAsc: "খেলোয়াড়ের নাম (অ-ঔ / A-Z)",
         sortNameDesc: "খেলোয়াড়ের নাম (Z-A)",
@@ -601,7 +603,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         notesPlaceholder: "মন্তব্য, পজিশন বা প্রাপ্যতা যোগ করুন...",
         selectPlayerAlert: "অনুগ্রহ করে অ্যাসাইন করার জন্য অন্তত একজন খেলোয়াড় সিলেক্ট করুন।",
         failedWriteStorage: "স্টোরেজে লিখতে ব্যর্থ হয়েছে।",
-        failedCopy: "স্বয়ংক্রিয়ভাবে কপি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।"
+        failedCopy: "স্বয়ংক্রিয়ভাবে কপি করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।",
+        selectPlayer: "{name}-কে নির্বাচন করুন",
+        deletePlayer: "{name}-কে মুছুন"
       }
     };
 
@@ -898,9 +902,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
         ),
         React.createElement(Panel, { className: "no-print", style: { marginBottom: 24 } },
           React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" } },
-            React.createElement("input", { type: "text", placeholder: t("searchPlaceholder"), value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8, width: 200 } }),
-            React.createElement("form", { onSubmit: handleAddPlayer }, React.createElement("input", { type: "text", placeholder: t("addPlayerPlaceholder"), value: newPlayerName, onChange: (e) => setNewPlayerName(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8 } })),
-            React.createElement("select", { value: sortBy, onChange: (e) => setSortBy(e.target.value), style: { background: COLORS.bg, color: COLORS.cream, padding: 8, borderRadius: 8 } },
+            React.createElement("input", { type: "text", "aria-label": t("searchPlaceholder"), placeholder: t("searchPlaceholder"), value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8, width: 200 } }),
+            React.createElement("form", { onSubmit: handleAddPlayer }, React.createElement("input", { type: "text", "aria-label": t("addPlayerPlaceholder"), placeholder: t("addPlayerPlaceholder"), value: newPlayerName, onChange: (e) => setNewPlayerName(e.target.value), style: { background: COLORS.bg, border: `1px solid ${COLORS.line}`, color: COLORS.cream, padding: 8, borderRadius: 8 } })),
+            React.createElement("select", { "aria-label": t("sortLabel"), value: sortBy, onChange: (e) => setSortBy(e.target.value), style: { background: COLORS.bg, color: COLORS.cream, padding: 8, borderRadius: 8 } },
               React.createElement("option", { value: "original" }, t("sortOriginal")),
               React.createElement("option", { value: "name-asc" }, t("sortNameAsc")),
               React.createElement("option", { value: "name-desc" }, t("sortNameDesc")),
@@ -916,10 +920,11 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", { className: "draft-th" }, t("indexCol")), React.createElement("th", { className: "draft-th" }, t("statusCol")), React.createElement("th", { className: "draft-th" }, t("nameCol")), React.createElement("th", { className: "draft-th" }, t("roleCol")), React.createElement("th", { className: "draft-th" }, t("notesCol")), React.createElement("th", { className: "draft-th no-print" }, t("actionCol")))),
             React.createElement("tbody", null, processedPlayers.map((player, index) => React.createElement("tr", { key: player.id },
               React.createElement("td", { className: "draft-td" }, index + 1),
-              React.createElement("td", { className: "draft-td" }, React.createElement("label", { className: "switch" }, React.createElement("input", { type: "checkbox", checked: player.selected, onChange: () => handleToggleSelect(player.id) }), React.createElement("span", { className: "slider" }))),
-              React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-name-input", value: player.name, onChange: (e) => handleEditName(player.id, e.target.value), placeholder: t("enterPlayerName") })),
+              React.createElement("td", { className: "draft-td" }, React.createElement("label", { className: "switch" }, React.createElement("input", { type: "checkbox", "aria-label": t("selectPlayer", { name: player.name }), checked: player.selected, onChange: () => handleToggleSelect(player.id) }), React.createElement("span", { className: "slider" }))),
+              React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-name-input", "aria-label": t("nameCol"), value: player.name, onChange: (e) => handleEditName(player.id, e.target.value), placeholder: t("enterPlayerName") })),
               React.createElement("td", { className: "draft-td" }, 
                 React.createElement("select", {
+                  "aria-label": t("roleCol"),
                   value: player.role || "none",
                   onChange: (e) => handleEditRole(player.id, e.target.value),
                   style: {
@@ -943,8 +948,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
                   React.createElement("option", { value: "ar" }, "All-rounder")
                 )
               ),
-              React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-notes-input", value: player.notes || "", onChange: (e) => handleEditNotes(player.id, e.target.value), placeholder: t("notesPlaceholder") })),
-              React.createElement("td", { className: "draft-td no-print" }, React.createElement(Btn, { onClick: () => handleDeletePlayer(player.id, player.name), kind: "danger" }, t("deleteBtn")))
+              React.createElement("td", { className: "draft-td" }, React.createElement("input", { className: "editable-notes-input", "aria-label": t("notesCol"), value: player.notes || "", onChange: (e) => handleEditNotes(player.id, e.target.value), placeholder: t("notesPlaceholder") })),
+              React.createElement("td", { className: "draft-td no-print" }, React.createElement(Btn, { onClick: () => handleDeletePlayer(player.id, player.name), "aria-label": t("deletePlayer", { name: player.name }), kind: "danger" }, t("deleteBtn")))
             )))
           ),
           React.createElement("div", { className: "no-print", style: { marginTop: 20, display: "flex", gap: 10 } },
