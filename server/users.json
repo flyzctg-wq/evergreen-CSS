@@ -19,5 +19,11 @@
     "passwordHash": "f8a08bbf979ff1876fb139502dd73996:812b538b81494176bdcd822fd9b1fbae550b14826ccc942ac360e00768ec9d47526d0ed2ac0d41491183cf2bb8275cb6a063b34da22e3581000a109ec7d4fe3c",
     "role": "standard",
     "createdAt": 1783321980881
+  },
+  {
+    "email": "security-test@evergreen.com",
+    "name": "Security Tester",
+    "passwordHash": "58fed3fa1110ee790673532e6f50932d:1a05418f49dd875f2355e0edfa09a37fc7b7eca958ff81f210b19d0c8cd9673defe790b5db0822360781131267c2f9c4000037a1c64cd48e80977ada71e93c22",
+    "role": "standard"
   }
 ]
