@@ -17,8 +17,8 @@ const RESET_SECRET = process.env.RESET_SECRET || "evergreen-reset-secret-key-928
 // Local file DB path for user storage fallback (used when Vercel KV is offline)
 const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
 
-// In-memory fallback if file system is read-only
-let memoryUsers = new Map();
+// In-memory user store cache to prevent redundant sync file I/O operations
+let memoryUsers = null;
 
 /**
  * Validates password strength:
@@ -140,6 +140,16 @@ function getKV() {
 }
 
 /**
+ * Performance Optimization: Lazy-load users from file into an in-memory Map cache.
+ * Avoids reading (`fs.readFileSync`) and parsing (`JSON.parse`) `users.json` from disk on every `getUser` request.
+ */
+function getUsersMap() {
+  if (memoryUsers !== null) return memoryUsers;
+  memoryUsers = loadUsersFromFile();
+  return memoryUsers;
+}
+
+/**
  * Local file-based user loading
  */
 function loadUsersFromFile() {
@@ -192,14 +202,9 @@ async function getUser(email) {
     }
   }
   
-  // 2. Try file system
-  const fileUsers = loadUsersFromFile();
-  if (fileUsers.has(key)) {
-    return fileUsers.get(key);
-  }
-  
-  // 3. Try memory map
-  return memoryUsers.get(key) || null;
+  // 2. Try in-memory user map (populated once from disk or via saveUser)
+  const usersMap = getUsersMap();
+  return usersMap.get(key) || null;
 }
 
 /**
@@ -216,8 +221,9 @@ async function saveUser(user) {
     throw new Error("Vercel KV database is not configured. Please create and connect a KV database in your Vercel project dashboard (Storage tab) to enable persistent registration/resets.");
   }
   
-  // Update memory state
-  memoryUsers.set(key, user);
+  // Update in-memory cache
+  const usersMap = getUsersMap();
+  usersMap.set(key, user);
   
   // 1. Save to Vercel KV
   let savedKV = false;
@@ -231,9 +237,7 @@ async function saveUser(user) {
   }
   
   // 2. Save to local file system
-  const fileUsers = loadUsersFromFile();
-  fileUsers.set(key, user);
-  saveUsersToFile(fileUsers);
+  saveUsersToFile(usersMap);
   
   return true;
 }
