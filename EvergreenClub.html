@@ -2109,7 +2109,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
       React.createElement("div", { style: { background:COLORS.panel, border:`1px solid ${COLORS.gold}`, borderRadius:16, padding:24, width:"min(96vw,700px)", marginBottom:40 } },
         React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 } },
           React.createElement("div", { style: { fontFamily:fontDisplay, fontSize:22, color:COLORS.gold } }, t("manualCorrectionTitle")),
-          React.createElement("button", { onClick:onClose, style:{ background:"none", border:"none", color:COLORS.textMuted, fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "×")
+          React.createElement("button", { "aria-label": "Close modal", title: "Close", onClick:onClose, style:{ background:"none", border:"none", color:COLORS.textMuted, fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "×")
         ),
         React.createElement("div", { style: { fontFamily:fontBody, fontSize:12, color:"#ff9d86", marginBottom:18, padding:"8px 12px", background:"rgba(193,67,42,0.12)", borderRadius:8, border:`1px solid ${COLORS.red}` } },
           t("manualCorrectionWarning")
@@ -2894,6 +2894,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           React.createElement(
             "button",
             {
+              "aria-label": "Print scorecard",
+              title: "Print scorecard",
               onClick: () => window.print(),
               style: {
                 background: "none",
@@ -2911,6 +2913,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           React.createElement(
             "button",
             {
+              "aria-label": "Undo last ball",
+              title: "Undo last ball",
               disabled: undoStack.length === 0,
               onClick: undoBall,
               style: {
@@ -2930,6 +2934,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           React.createElement(
             "button",
             {
+              "aria-label": "Edit score manually",
+              title: "Edit score manually",
               onClick: () => setShowEditScore(true),
               style: {
                 background: "none",
@@ -2947,6 +2953,9 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           React.createElement(
             "button",
             {
+              "aria-label": "Toggle viewer share link",
+              title: "Toggle viewer share link",
+              "aria-expanded": showViewerPanel,
               onClick: () => setShowViewerPanel(v => !v),
               style: {
                 background: showViewerPanel ? "rgba(92,138,90,0.15)" : "none",
@@ -2964,6 +2973,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
           React.createElement(
             "button",
             {
+              "aria-label": "Injury and substitution rules",
+              title: "Injury and substitution rules",
               onClick: () => setShowSubModal(true),
               style: {
                 background: "none",
@@ -3149,6 +3160,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
             { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } },
             React.createElement("div", { style: { fontFamily: fontDisplay, fontSize: 20, color: COLORS.cream } }, t("injurySubsTitle")),
             React.createElement("button", {
+              "aria-label": "Close modal",
+              title: "Close",
               onClick: () => {
                 setShowSubModal(false);
                 setPlayerToReplace("");
