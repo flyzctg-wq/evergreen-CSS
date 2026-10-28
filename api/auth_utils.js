@@ -44,13 +44,16 @@ function hashPassword(password) {
 }
 
 /**
- * Verifies password matching.
+ * Verifies password matching using timingSafeEqual to prevent timing attacks.
  */
 function verifyPassword(password, stored) {
   if (!stored || !stored.includes(":")) return false;
   const [salt, hash] = stored.split(":");
   const checkHash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
-  return hash === checkHash;
+  const hashBuf = Buffer.from(hash, "utf8");
+  const checkHashBuf = Buffer.from(checkHash, "utf8");
+  if (hashBuf.length !== checkHashBuf.length) return false;
+  return crypto.timingSafeEqual(hashBuf, checkHashBuf);
 }
 
 /**
@@ -112,7 +115,11 @@ function verifyJWT(token, secret) {
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
       
-    if (signatureStr !== expectedSignature) return null;
+    const sigBuf = Buffer.from(signatureStr, "utf8");
+    const expectedSigBuf = Buffer.from(expectedSignature, "utf8");
+    if (sigBuf.length !== expectedSigBuf.length || !crypto.timingSafeEqual(sigBuf, expectedSigBuf)) {
+      return null;
+    }
     
     const payload = base64UrlDecode(payloadStr);
     if (payload.exp && Date.now() / 1000 > payload.exp) return null; // Expired
