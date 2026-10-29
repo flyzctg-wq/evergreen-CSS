@@ -1,0 +1,3 @@
+## 2026-10-29 - In-memory Caching for Local User DB Fallback
+**Learning:** When Vercel KV is not configured, `getUser()` in `api/auth_utils.js` executed synchronous file reads (`fs.readFileSync`) and `JSON.parse` on every request. Caching loaded users in the existing `memoryUsers` Map lazily on first access converted synchronous disk I/O into O(1) in-memory Map lookups, preventing main-thread event loop blocking.
+**Action:** Always check if file-backed fallback stores in Node.js backends are re-reading disk synchronously per request, and use lazy in-memory caching to keep lookups non-blocking and fast.
