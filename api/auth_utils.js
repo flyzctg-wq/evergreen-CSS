@@ -17,8 +17,9 @@ const RESET_SECRET = process.env.RESET_SECRET || "evergreen-reset-secret-key-928
 // Local file DB path for user storage fallback (used when Vercel KV is offline)
 const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
 
-// In-memory fallback if file system is read-only
+// In-memory cache for fast user lookup (avoids blocking synchronous file I/O on every request)
 let memoryUsers = new Map();
+let isMemoryLoaded = false;
 
 /**
  * Validates password strength:
@@ -192,13 +193,13 @@ async function getUser(email) {
     }
   }
   
-  // 2. Try file system
-  const fileUsers = loadUsersFromFile();
-  if (fileUsers.has(key)) {
-    return fileUsers.get(key);
+  // Performance optimization: Lazily load user store from file into in-memory Map once,
+  // making subsequent lookups O(1) in-memory without synchronous disk reads or JSON parsing.
+  if (!isMemoryLoaded) {
+    memoryUsers = loadUsersFromFile();
+    isMemoryLoaded = true;
   }
   
-  // 3. Try memory map
   return memoryUsers.get(key) || null;
 }
 
@@ -216,6 +217,12 @@ async function saveUser(user) {
     throw new Error("Vercel KV database is not configured. Please create and connect a KV database in your Vercel project dashboard (Storage tab) to enable persistent registration/resets.");
   }
   
+  // Ensure memory cache is initialized
+  if (!isMemoryLoaded) {
+    memoryUsers = loadUsersFromFile();
+    isMemoryLoaded = true;
+  }
+
   // Update memory state
   memoryUsers.set(key, user);
   
@@ -231,9 +238,7 @@ async function saveUser(user) {
   }
   
   // 2. Save to local file system
-  const fileUsers = loadUsersFromFile();
-  fileUsers.set(key, user);
-  saveUsersToFile(fileUsers);
+  saveUsersToFile(memoryUsers);
   
   return true;
 }
