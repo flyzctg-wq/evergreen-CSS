@@ -750,6 +750,8 @@ html, body {
     const { matchConfig, innings, firstInningsRecord, matchOver, resultText, inningsNumber } = snap;
 
     if (matchOver) {
+      // ⚡ Bolt Optimization: Stop polling once match is over to prevent redundant traffic
+      stopPoll();
       $waiting.style.display = "none";
       $live.style.display    = "none";
       $matchOver.style.display = "block";
@@ -874,6 +876,17 @@ html, body {
     }, 1000);
   }
 
+  /**
+   * ⚡ Bolt Optimization: Stop polling when Socket.io is active or match is complete.
+   * Avoids 60 unnecessary HTTP requests/min per viewer while real-time WebSocket is connected.
+   */
+  function stopPoll() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
   // ── Socket.io setup ───────────────────────────────────────────────────────
   function initSocketIO() {
     const script = document.createElement("script");
@@ -884,6 +897,8 @@ html, body {
 
         socket.on("connect", () => {
           useSocketIO = true;
+          // ⚡ Bolt: Real-time socket is active; cease redundant HTTP polling
+          stopPoll();
           setStatus("live", t("liveRealTime"));
           socket.emit("join_match", { matchId: MATCH_ID });
         });
@@ -903,6 +918,8 @@ html, body {
 
         socket.on("disconnect", () => {
           setStatus("waiting", t("reconnecting"));
+          // ⚡ Bolt: Socket disconnected; resume HTTP polling fallback immediately
+          startPoll();
         });
 
         socket.on("connect_error", () => {
