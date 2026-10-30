@@ -200,10 +200,11 @@ app.post("/api/auth/reset", async (req, res) => {
     console.log(`\n🔑 PASSWORD RESET REQUEST RECEIVED for ${email}`);
     console.log(`Reset URL: ${resetUrl}\n`);
 
+    // Security: Do NOT leak password reset URL or token in HTTP responses to prevent account takeover.
+    // The reset link is only logged to server console for testing/development.
     return res.json({
       success: true,
-      message: "Password recovery link generated successfully.",
-      debugResetUrl: resetUrl // Returned for offline testing/verification convenience
+      message: "Password recovery link generated successfully."
     });
   }
 
