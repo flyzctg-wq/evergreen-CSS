@@ -1,0 +1,3 @@
+## 2026-06-28 - ARIA Labels and Focus States for Language Switchers
+**Learning:** Standalone language toggle buttons displaying only target/current locale abbreviations or script names (like "বাংলা") without context fail to communicate their action and target language to assistive technologies. Additionally, interactive header controls often lack keyboard `:focus-visible` styling, hindering keyboard accessibility.
+**Action:** Always provide descriptive `aria-label` attributes indicating the action and destination language (e.g., "Switch language to Bangla"), dynamically update them whenever locale changes, and include `:focus-visible` styling.
