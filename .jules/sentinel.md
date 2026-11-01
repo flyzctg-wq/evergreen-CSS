@@ -1,0 +1,4 @@
+## 2026-11-01 - Exposure of Password Reset Tokens in API Response
+**Vulnerability:** The password reset request endpoint in both `api/auth/reset.js` and `server/server.js` was returning `debugResetUrl` containing the raw signed JWT reset token in the JSON HTTP response.
+**Learning:** During initial development or offline testing, the reset URL was added to the JSON response payload for quick testing convenience. While server console logs are acceptable for offline local development, including the reset link in the HTTP response enables trivial account takeover: an attacker knowing an email could request a reset and capture the valid reset token straight from the HTTP response.
+**Prevention:** Never include password recovery tokens, debug reset URLs, or sensitive authorization artifacts in client-facing HTTP response bodies, even in development fallbacks. Only log to the server console or deliver out-of-band (e.g. email).

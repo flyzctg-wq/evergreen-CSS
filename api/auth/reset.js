@@ -37,10 +37,11 @@ module.exports = async function handler(req, res) {
       console.log(`\n🔑 PASSWORD RESET REQUEST RECEIVED for ${email}`);
       console.log(`Reset URL: ${resetUrl}\n`);
 
+      // Security: Do NOT expose resetUrl or token in API response, as this allows
+      // arbitrary account takeover by anyone requesting a reset for an email.
       return res.json({
         success: true,
-        message: "Password recovery link generated successfully.",
-        debugResetUrl: resetUrl // Returned for verification
+        message: "Password recovery link generated successfully."
       });
     }
 
