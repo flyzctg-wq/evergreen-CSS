@@ -874,6 +874,15 @@ html, body {
     }, 1000);
   }
 
+  // Optimization (Bolt): Pause HTTP polling when WebSocket is connected
+  // Saves 60 HTTP requests/min per viewer, reducing server CPU & network usage
+  function stopPoll() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
   // ── Socket.io setup ───────────────────────────────────────────────────────
   function initSocketIO() {
     const script = document.createElement("script");
@@ -884,6 +893,8 @@ html, body {
 
         socket.on("connect", () => {
           useSocketIO = true;
+          // WebSocket connected: suspend redundant 1s HTTP polling
+          stopPoll();
           setStatus("live", t("liveRealTime"));
           socket.emit("join_match", { matchId: MATCH_ID });
         });
@@ -903,6 +914,8 @@ html, body {
 
         socket.on("disconnect", () => {
           setStatus("waiting", t("reconnecting"));
+          // Fall back to HTTP polling while disconnected from Socket.io
+          startPoll();
         });
 
         socket.on("connect_error", () => {
