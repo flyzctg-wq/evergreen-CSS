@@ -195,15 +195,13 @@ app.post("/api/auth/reset", async (req, res) => {
     }
 
     const resetToken = authUtils.signJWT({ email: user.email }, authUtils.RESET_SECRET, 3600); // 1h expiry
-    const resetUrl = `http://localhost:${PORT}/EvergreenClub.html?resetToken=${resetToken}`;
     
-    console.log(`\n🔑 PASSWORD RESET REQUEST RECEIVED for ${email}`);
-    console.log(`Reset URL: ${resetUrl}\n`);
+    // Security: Do not expose reset tokens in the response or logs to prevent account takeover
+    console.log(`\n🔑 Password reset requested for ${email}`);
 
     return res.json({
       success: true,
-      message: "Password recovery link generated successfully.",
-      debugResetUrl: resetUrl // Returned for offline testing/verification convenience
+      message: "If this email is registered, a password recovery link has been generated."
     });
   }
 

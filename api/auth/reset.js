@@ -30,17 +30,13 @@ module.exports = async function handler(req, res) {
       }
 
       const resetToken = authUtils.signJWT({ email: user.email }, authUtils.RESET_SECRET, 3600);
-      const host = req.headers.host || "localhost:3847";
-      const protocol = req.headers["x-forwarded-proto"] || "http";
-      const resetUrl = `${protocol}://${host}/EvergreenClub.html?resetToken=${resetToken}`;
       
-      console.log(`\n🔑 PASSWORD RESET REQUEST RECEIVED for ${email}`);
-      console.log(`Reset URL: ${resetUrl}\n`);
+      // Security: Do not expose reset tokens in the response or logs to prevent account takeover
+      console.log(`\n🔑 Password reset requested for ${email}`);
 
       return res.json({
         success: true,
-        message: "Password recovery link generated successfully.",
-        debugResetUrl: resetUrl // Returned for verification
+        message: "If this email is registered, a password recovery link has been generated."
       });
     }
 
