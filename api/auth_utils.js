@@ -20,6 +20,10 @@ const LOCAL_DB_PATH = path.join(__dirname, "..", "server", "users.json");
 // In-memory fallback if file system is read-only
 let memoryUsers = new Map();
 
+// In-memory file cache to avoid redundant fs reads and JSON parsing on user queries
+let fileUsersCache = null;
+let fileUsersMtime = 0;
+
 /**
  * Validates password strength:
  * Minimum 8 characters, at least one uppercase, one lowercase, one number, and one special character.
@@ -140,17 +144,25 @@ function getKV() {
 }
 
 /**
- * Local file-based user loading
+ * Local file-based user loading with mtime-based in-memory caching.
+ * Bypasses fs.readFileSync and JSON.parse if the file modification timestamp is unchanged.
  */
 function loadUsersFromFile() {
   try {
-    if (fs.existsSync(LOCAL_DB_PATH)) {
-      const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
-      const list = JSON.parse(data);
-      const map = new Map();
-      list.forEach(u => map.set(u.email.toLowerCase(), u));
-      return map;
+    if (!fs.existsSync(LOCAL_DB_PATH)) {
+      return new Map();
     }
+    const stat = fs.statSync(LOCAL_DB_PATH);
+    if (fileUsersCache && stat.mtimeMs === fileUsersMtime) {
+      return fileUsersCache;
+    }
+    const data = fs.readFileSync(LOCAL_DB_PATH, "utf8");
+    const list = JSON.parse(data);
+    const map = new Map();
+    list.forEach(u => map.set(u.email.toLowerCase(), u));
+    fileUsersCache = map;
+    fileUsersMtime = stat.mtimeMs;
+    return map;
   } catch (e) {
     console.error("Failed to load users from file", e);
   }
@@ -158,7 +170,7 @@ function loadUsersFromFile() {
 }
 
 /**
- * Local file-based user saving
+ * Local file-based user saving with cache synchronization.
  */
 function saveUsersToFile(map) {
   try {
@@ -169,6 +181,9 @@ function saveUsersToFile(map) {
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(list, null, 2), "utf8");
+    const stat = fs.statSync(LOCAL_DB_PATH);
+    fileUsersCache = map;
+    fileUsersMtime = stat.mtimeMs;
   } catch (e) {
     console.error("Failed to write users to file", e);
   }
