@@ -874,6 +874,15 @@ html, body {
     }, 1000);
   }
 
+  // Bolt ⚡ optimization: stop redundant 1-second HTTP polling once real-time
+  // WebSocket push is established, saving ~60 HTTP requests/minute per viewer tab.
+  function stopPoll() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
   // ── Socket.io setup ───────────────────────────────────────────────────────
   function initSocketIO() {
     const script = document.createElement("script");
@@ -884,6 +893,7 @@ html, body {
 
         socket.on("connect", () => {
           useSocketIO = true;
+          stopPoll(); // Suspend polling while real-time WebSocket connection is active
           setStatus("live", t("liveRealTime"));
           socket.emit("join_match", { matchId: MATCH_ID });
         });
@@ -902,7 +912,9 @@ html, body {
         });
 
         socket.on("disconnect", () => {
+          useSocketIO = false;
           setStatus("waiting", t("reconnecting"));
+          startPoll(); // Fallback to HTTP polling if WebSocket disconnects
         });
 
         socket.on("connect_error", () => {
