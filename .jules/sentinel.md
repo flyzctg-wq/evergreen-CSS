@@ -1,0 +1,4 @@
+## 2026-07-06 - Timing-Safe HMAC Signature Verification in JWT Helper
+**Vulnerability:** In `api/auth_utils.js`, `verifyJWT` previously compared the received signature against the computed HMAC signature using standard JavaScript string comparison (`!==`). This is susceptible to timing side-channel attacks where signature bytes could theoretically be inferred based on string comparison execution time.
+**Learning:** Node's built-in `crypto.timingSafeEqual` requires equal buffer lengths or it throws a `RangeError`. Pre-checking buffer length (`sigBuf.length !== expectedBuf.length`) before calling `crypto.timingSafeEqual` prevents unhandled exceptions while guaranteeing constant-time comparison when signatures match in length.
+**Prevention:** Always compare cryptographic digests and signatures using constant-time comparison functions like `crypto.timingSafeEqual` with length checks.
