@@ -1,0 +1,4 @@
+## 2025-05-18 - Timing Attacks in Password & JWT Signature Comparisons
+**Vulnerability:** `verifyPassword` and `verifyJWT` used standard JavaScript string comparison operators (`===` / `!==`) to compare password hashes and HMAC signatures. Standard string equality returns early on the first mismatched byte, creating a timing side-channel that could allow attackers to iteratively determine expected signatures or hashes byte-by-byte.
+**Learning:** In custom token and authentication handlers built using Node's native `crypto` module, sensitive cryptographic digests must always be compared using `crypto.timingSafeEqual` with matched buffer lengths to prevent timing attacks.
+**Prevention:** Avoid `===` and `!==` when comparing HMAC signatures, tokens, or hashed secrets. Convert values to buffers and use `crypto.timingSafeEqual` after checking equal lengths.
