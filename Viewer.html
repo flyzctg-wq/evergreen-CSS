@@ -852,6 +852,8 @@ html, body {
   }
 
   // ── HTTP poll fallback ────────────────────────────────────────────────────
+  // Bolt Optimization: Halt redundant 1Hz HTTP polling when Socket.io push is connected.
+  // Saves ~3,600 HTTP GET requests/hr per active viewer and reduces server CPU & network usage.
   let pollTimer = null;
   function startPoll() {
     if (pollTimer) return;
@@ -874,6 +876,13 @@ html, body {
     }, 1000);
   }
 
+  function stopPoll() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
   // ── Socket.io setup ───────────────────────────────────────────────────────
   function initSocketIO() {
     const script = document.createElement("script");
@@ -884,11 +893,13 @@ html, body {
 
         socket.on("connect", () => {
           useSocketIO = true;
+          stopPoll(); // Halt HTTP poll loop now that real-time websocket push is active
           setStatus("live", t("liveRealTime"));
           socket.emit("join_match", { matchId: MATCH_ID });
         });
 
         socket.on("score_update", (snap) => {
+          stopPoll();
           if (snap.__ts !== lastTs) {
             lastTs = snap.__ts;
             render(snap);
@@ -902,7 +913,9 @@ html, body {
         });
 
         socket.on("disconnect", () => {
+          useSocketIO = false;
           setStatus("waiting", t("reconnecting"));
+          startPoll(); // Fallback to HTTP polling when disconnected
         });
 
         socket.on("connect_error", () => {
