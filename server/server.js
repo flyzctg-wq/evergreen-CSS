@@ -189,22 +189,24 @@ app.post("/api/auth/reset", async (req, res) => {
   if (action === "request") {
     if (!email) return res.status(400).json({ error: "Email is required." });
     const user = await authUtils.getUser(email);
+    // Security: Always return identical generic responses to prevent user account enumeration
+    const genericResponse = {
+      success: true,
+      message: "If this email is registered, a password recovery link has been generated."
+    };
+
     if (!user) {
-      // Return positive message anyway to prevent email enumeration
-      return res.json({ success: true, message: "If this email is registered, a password recovery link has been generated." });
+      return res.json(genericResponse);
     }
 
     const resetToken = authUtils.signJWT({ email: user.email }, authUtils.RESET_SECRET, 3600); // 1h expiry
     const resetUrl = `http://localhost:${PORT}/EvergreenClub.html?resetToken=${resetToken}`;
     
+    // Log for server-side out-of-band delivery; do NOT return token or reset URL in HTTP response
     console.log(`\n🔑 PASSWORD RESET REQUEST RECEIVED for ${email}`);
     console.log(`Reset URL: ${resetUrl}\n`);
 
-    return res.json({
-      success: true,
-      message: "Password recovery link generated successfully.",
-      debugResetUrl: resetUrl // Returned for offline testing/verification convenience
-    });
+    return res.json(genericResponse);
   }
 
   if (action === "confirm") {
