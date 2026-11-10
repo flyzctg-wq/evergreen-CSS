@@ -200,10 +200,11 @@ app.post("/api/auth/reset", async (req, res) => {
     console.log(`\n🔑 PASSWORD RESET REQUEST RECEIVED for ${email}`);
     console.log(`Reset URL: ${resetUrl}\n`);
 
+    // SECURITY: Never expose resetUrl or the resetToken in the response body,
+    // as that allows unauthenticated attackers to hijack user accounts.
     return res.json({
       success: true,
-      message: "Password recovery link generated successfully.",
-      debugResetUrl: resetUrl // Returned for offline testing/verification convenience
+      message: "Password recovery link generated successfully."
     });
   }
 
